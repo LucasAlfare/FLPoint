@@ -10,11 +10,11 @@ interface DataCRUD<TItem, TId> {
   suspend fun clear()
 }
 
-interface DataCRUDAdapter<TItem, TId> : DataCRUD<TItem, TId> {
+abstract class DataCRUDAdapter<TItem, TId> : DataCRUD<TItem, TId> {
   override suspend fun create(next: TItem) = false
   override suspend fun getAll() = emptyList<TItem>()
   override suspend fun getById(id: TId): TItem? = null
   override suspend fun updateById(id: TId, nextValues: TItem) = false
   override suspend fun removeById(id: TId) = false
-  override suspend fun clear()
+  override suspend fun clear() {}
 }

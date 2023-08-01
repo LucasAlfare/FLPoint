@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.toList
 import org.bson.types.ObjectId
 
 
-object MongoUsersService : DataCRUDAdapter<User, ObjectId> {
+object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
   private const val COLLECTION_NAME = "users"
 
   private val usersCollection = MongoDbSetup
