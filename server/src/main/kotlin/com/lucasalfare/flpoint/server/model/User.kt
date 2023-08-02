@@ -25,4 +25,6 @@ data class User(
   var maxAuthenticationsPerDay: Int? = null,
   var pointRegistrations: MutableList<PointRegistration>? = null,
   var justifications: MutableList<Justification>? = null
-)
+) {
+  fun toCreatedUser(nextToken: String? = null) = CreatedUser(id, nextToken)
+}
