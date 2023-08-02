@@ -7,7 +7,7 @@ object MongoDbSetup {
   private const val DATABASE_NAME = "FLPoint"
   private val mongoPassword = System.getenv("MONGODB_PASSWORD")
   private val url =
-    "mongodb+srv://lucasalfare:$mongoPassword@flpointcluster1.8q0jjmy.mongodb.net/?retryWrites=true&w=majority"
+    "mongodb+srv://lucasalfare:${mongoPassword}@flpointcluster1.8q0jjmy.mongodb.net/?retryWrites=true&w=majority"
 
   val db: MongoDatabase
     get() = MongoClient
