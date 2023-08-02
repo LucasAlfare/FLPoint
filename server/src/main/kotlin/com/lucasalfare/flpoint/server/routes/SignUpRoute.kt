@@ -13,8 +13,7 @@ fun Route.signUpRoute() {
     post {
       val data = call.receive<User>()
       if (MongoUsersService.create(data)) {
-        val nextToken = "" // TODO...
-        call.respond(HttpStatusCode.OK, data.toCreatedUser(nextToken))
+        call.respond(HttpStatusCode.OK, data.id!!.toHexString())
       } else {
         call.respond(HttpStatusCode.BadRequest, "Can not create your system user.")
       }
