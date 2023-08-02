@@ -4,7 +4,7 @@ import com.lucasalfare.flpoint.server.model.Credentials
 import org.mindrot.jbcrypt.BCrypt
 
 fun Credentials.hashPassword() {
-  password = BCrypt.hashpw(password, BCrypt.gensalt())
+  this.password = BCrypt.hashpw(password, BCrypt.gensalt())
 }
 
 fun Credentials.checkPassword(plainPassword: String) =

@@ -24,6 +24,7 @@ object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
     if (next.credentials == null) return false
     if (next.credentials!!.username == null || next.credentials!!.password == null) return false
     if (next.credentials!!.username!!.isEmpty() || next.credentials!!.password!!.isEmpty()) return false
+    if (getAll().any { it.credentials!!.username!! ==  next.credentials!!.username }) return false
 
     next.credentials!!.hashPassword()
 

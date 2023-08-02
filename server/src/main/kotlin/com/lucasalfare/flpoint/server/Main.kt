@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server
 
+import com.lucasalfare.flpoint.server.routes.signUpRoute
 import com.lucasalfare.flpoint.server.routes.usersRoute
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -19,6 +20,7 @@ fun Application.module() {
 fun Application.configureRouting() {
   routing {
     usersRoute()
+    signUpRoute()
   }
 }
 
