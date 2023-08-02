@@ -16,4 +16,10 @@ import java.time.LocalTime
 @Serializable
 data class PointRegistration(
   var time: LocalTime? = null
-)
+) {
+  fun isValid(): Boolean {
+    if (time == null) return false
+    if (time!!.hour == 0 && time!!.minute == 0) return false
+    return true
+  }
+}

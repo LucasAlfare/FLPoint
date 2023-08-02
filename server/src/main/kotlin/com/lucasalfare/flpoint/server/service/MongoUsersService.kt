@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server.service
 
+import com.lucasalfare.flpoint.server.model.PointRegistration
 import com.lucasalfare.flpoint.server.model.User
 import com.lucasalfare.flpoint.server.security.hashPassword
 import com.lucasalfare.flpoint.server.service.db.DataCRUDAdapter
@@ -24,7 +25,7 @@ object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
     if (next.credentials == null) return false
     if (next.credentials!!.username == null || next.credentials!!.password == null) return false
     if (next.credentials!!.username!!.isEmpty() || next.credentials!!.password!!.isEmpty()) return false
-    if (getAll().any { it.credentials!!.username!! ==  next.credentials!!.username }) return false
+    if (getAll().any { it.credentials!!.username!! == next.credentials!!.username }) return false
 
     next.credentials!!.hashPassword()
 
@@ -51,5 +52,28 @@ object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
 
   override suspend fun clear() {
     usersCollection.drop()
+  }
+
+  suspend fun createPointRegistration(
+    id: ObjectId,
+    pointRegistration: PointRegistration
+  ): Boolean {
+    if (id.toHexString().isEmpty()) return false
+    if (pointRegistration.time == null) return false
+    if (!pointRegistration.isValid()) return false
+
+    // TODO: validate using registration limit/frequency rules
+
+    val target = getById(id)
+    if (target!!.pointRegistrations == null) target.pointRegistrations = mutableListOf()
+
+    target.pointRegistrations!! += pointRegistration
+
+    val filter = eq(User::id.name, id)
+    val update = combine(
+      set(User::pointRegistrations.name, target.pointRegistrations)
+    )
+
+    return usersCollection.updateOne(filter, update).wasAcknowledged()
   }
 }
