@@ -6,8 +6,8 @@ import com.lucasalfare.flpoint.server.security.hashPassword
 import com.lucasalfare.flpoint.server.service.db.DataCRUDAdapter
 import com.lucasalfare.flpoint.server.service.db.mongo.MongoDbSetup
 import com.mongodb.client.model.Filters.eq
-import com.mongodb.client.model.Updates.combine
-import com.mongodb.client.model.Updates.set
+import com.mongodb.client.model.FindOneAndUpdateOptions
+import com.mongodb.client.model.Updates.*
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import org.bson.types.ObjectId
@@ -38,15 +38,6 @@ object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
   override suspend fun getById(id: ObjectId) =
     usersCollection.find(eq(User::id.name, id)).firstOrNull()
 
-  override suspend fun updateById(id: ObjectId, nextValues: User): Boolean {
-    val filter = eq(User::id.name, id)
-    val update = combine(
-      set(User::maxAuthenticationsPerDay.name, nextValues.maxAuthenticationsPerDay)
-    )
-
-    return usersCollection.updateOne(filter, update).wasAcknowledged()
-  }
-
   override suspend fun removeById(id: ObjectId) =
     usersCollection.deleteOne(eq(User::id.name, id)).wasAcknowledged()
 
@@ -56,24 +47,21 @@ object MongoUsersService : DataCRUDAdapter<User, ObjectId>() {
 
   suspend fun createPointRegistration(
     id: ObjectId,
-    pointRegistration: PointRegistration
+    pointRegistration: PointRegistration?
   ): Boolean {
     if (id.toHexString().isEmpty()) return false
+    if (pointRegistration == null) return false
     if (pointRegistration.time == null) return false
     if (!pointRegistration.isValid()) return false
 
-    // TODO: validate using registration limit/frequency rules
-
-    val target = getById(id)
-    if (target!!.pointRegistrations == null) target.pointRegistrations = mutableListOf()
-
-    target.pointRegistrations!! += pointRegistration
+    // TODO: validate by registration limit/frequency rules
 
     val filter = eq(User::id.name, id)
     val update = combine(
-      set(User::pointRegistrations.name, target.pointRegistrations)
+      push(User::pointRegistrations.name, pointRegistration)
     )
 
+    //usersCollection.findOneAndUpdate(filter, update)
     return usersCollection.updateOne(filter, update).wasAcknowledged()
   }
 }
