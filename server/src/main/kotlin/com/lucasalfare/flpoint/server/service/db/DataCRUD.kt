@@ -11,6 +11,7 @@ interface DataCRUD<TItem, TId> {
 }
 
 abstract class DataCRUDAdapter<TItem, TId> : DataCRUD<TItem, TId> {
+
   override suspend fun create(next: TItem) = false
   override suspend fun getAll() = emptyList<TItem>()
   override suspend fun getById(id: TId): TItem? = null

@@ -28,7 +28,7 @@ fun Route.loginRoute() {
           call.respond(HttpStatusCode.BadRequest, "User doesn't exists.")
         }
       } else {
-        call.respond(HttpStatusCode.BadRequest, "Missing ID. Have you ever signed up to the system?")
+        call.respond(HttpStatusCode.BadRequest, "Missing ID.")
       }
     }
   }
