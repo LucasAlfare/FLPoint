@@ -1,9 +1,5 @@
 package com.lucasalfare.flpoint.server
 
-import com.lucasalfare.flpoint.server.routes.loginRoute
-import com.lucasalfare.flpoint.server.routes.pointRegistrationRoute
-import com.lucasalfare.flpoint.server.routes.signUpRoute
-import com.lucasalfare.flpoint.server.routes.usersRoute
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
@@ -21,10 +17,7 @@ fun Application.module() {
 
 fun Application.configureRouting() {
   routing {
-    usersRoute()
-    signUpRoute()
-    loginRoute()
-    pointRegistrationRoute()
+
   }
 }
 
