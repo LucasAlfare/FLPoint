@@ -25,13 +25,13 @@ dependencies {
   implementation("org.mindrot:jbcrypt:0.4")
 
   // Dependencies for database manipulation
-  implementation("org.jetbrains.exposed:exposed-core:0.45.0")
-  implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
+  implementation("org.jetbrains.exposed:exposed-core:0.48.0")
+  implementation("org.jetbrains.exposed:exposed-jdbc:0.48.0")
   /*
   Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
   TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
    */
-  implementation("org.xerial:sqlite-jdbc:3.44.1.0")
+  implementation("org.xerial:sqlite-jdbc:3.45.2.0")
   implementation("com.zaxxer:HikariCP:5.1.0")
 
   // isso aqui serve apenas para gerar os logs da engine do servidor...
