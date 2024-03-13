@@ -7,6 +7,6 @@ object PasswordHashing {
     return BCrypt.hashpw(original, BCrypt.gensalt())
   }
 
-  fun checkPassword(plainPassword: String, original: String) =
-    BCrypt.checkpw(plainPassword, original)
+  fun checkPassword(original: String, hashed: String) =
+    BCrypt.checkpw(original, hashed)
 }

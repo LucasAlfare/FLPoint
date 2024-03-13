@@ -1,6 +1,7 @@
 package com.lucasalfare.flpoint.server
 
 import com.lucasalfare.flpoint.server.data.MyDatabase
+import com.lucasalfare.flpoint.server.routes.login
 import com.lucasalfare.flpoint.server.routes.signup
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -30,9 +31,22 @@ fun Application.configureRouting() {
       - The code NotAcceptable and the error messages when something goes wrong.
 
     Example request:
-    curl -d '{"login":"abc@def.com", "password":"original_password"}' -H "Content-Type: application/json" -X POST http://localhost:3000/flpoint/user
+    curl -d '{"login":"qwerty", "password":"hehehehe"}' -H "Content-Type: application/json" -X POST http://localhost:3000/flpoint/users/signup
      */
     signup()
+
+    /*
+    - The client sends a JSON with login and password (original, not hashed);
+    - The server responds with:
+      - The code OK and a JWT when login succeeds;
+      - The code NotAcceptable when [login || password] doesn't match;
+      - The code NotFound when login doesn't exist
+
+     Example request:
+
+     curl -d '{"login":"qwerty", "password":"hehehehe"}' -H "Content-Type: application/json" -X POST http://localhost:3000/flpoint/users/login
+     */
+    login()
   }
 }
 

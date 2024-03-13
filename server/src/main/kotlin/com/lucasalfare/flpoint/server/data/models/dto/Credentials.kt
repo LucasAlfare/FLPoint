@@ -16,7 +16,7 @@ data class Credentials(
       "Invalid credentials. Blank or empty fields."
     }
 
-    require(login.length > 6 && password.length > 6) {
+    require(login.length >= 6 && password.length >= 6) {
       "The login and password must contains at least 6 characters."
     }
   }

@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.data.service
+package com.lucasalfare.flpoint.server.data.services
 
 import com.lucasalfare.flpoint.server.data.models.Justification
 import com.lucasalfare.flpoint.server.data.tables.JustificationsTable
