@@ -2,6 +2,9 @@ application.conf
 local.properties
 structure.md
 
+# Ignore local database files
+*.db
+
 .idea
 .gradle
 build/
