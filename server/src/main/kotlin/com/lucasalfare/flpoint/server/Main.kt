@@ -5,6 +5,7 @@ import com.lucasalfare.flpoint.server.data.services.Users
 import com.lucasalfare.flpoint.server.routes.login
 import com.lucasalfare.flpoint.server.routes.protected
 import com.lucasalfare.flpoint.server.routes.signup
+import com.lucasalfare.flpoint.server.routes.timeRegistration
 import com.lucasalfare.flpoint.server.security.DEFAULT_JWT_CONFIG
 import com.lucasalfare.flpoint.server.security.JwtConfig
 import io.ktor.http.*
@@ -56,6 +57,11 @@ fun Application.configureRouting() {
      curl -d '{"login":"qwerty", "password":"hehehehe"}' -H "Content-Type: application/json" -X POST http://localhost:3000/flpoint/users/login
      */
     login()
+
+    /*
+    curl -d '{"dateTime": 8127681276192}' -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0MjkxMzZ9.bXLkCMEKnOjDZAgF6582aj5ef2WhbcTrzu_njh5J8YA" -X POST http://localhost:3000/flpoint/users/1/time_registration
+     */
+    timeRegistration()
 
     /*
     curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0MjYxMTl9.JGKX6reblrDcjIygl9h58NX9JBiuoQFVG7qmgVrjBAo" -X GET http://localhost:3000/flpoint/users/1/protected

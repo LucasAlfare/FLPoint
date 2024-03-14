@@ -56,6 +56,6 @@ object Users {
       return ServerResult(HttpStatusCode.OK, it)
     }
 
-    return ServerResult(HttpStatusCode.NotFound)
+    return ServerResult(HttpStatusCode.NotFound, "User not found")
   }
 }
