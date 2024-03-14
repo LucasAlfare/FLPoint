@@ -11,17 +11,19 @@ import org.jetbrains.exposed.sql.selectAll
 
 object Users {
 
+  // TODO: does this needs dedicated validations?
   suspend fun createUser(login: String, originalPassword: String): ServerResult {
     val id = MyDatabase.dbQuery {
       UsersTable.insertAndGetId {
         it[UsersTable.login] = login
-        it[UsersTable.hashedPassword] = PasswordHashing.hashedPassword(originalPassword)
+        it[hashedPassword] = PasswordHashing.hashedPassword(originalPassword)
       }.value
     }
 
     return ServerResult(code = HttpStatusCode.OK)
   }
 
+  // TODO: refactor this to a dedicated validator
   suspend fun validLogin(login: String, originalPassword: String): ServerResult {
     val search = MyDatabase.dbQuery {
       UsersTable
