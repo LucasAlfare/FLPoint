@@ -57,8 +57,7 @@ fun Application.configureRouting() {
     login()
 
     /*
-
-    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxfQ.9449ggAlFlZq4iu0nnw49mBeBikaE8_28mZiKETR810" -X GET http://localhost:3000/flpoint/users/1/protected
+    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0MjYxMTl9.JGKX6reblrDcjIygl9h58NX9JBiuoQFVG7qmgVrjBAo" -X GET http://localhost:3000/flpoint/users/1/protected
      */
     protected()
   }
@@ -76,8 +75,15 @@ fun Application.configureAuthentication() {
       verifier(JwtConfig.getVerifier())
       realm = "FLPoint"
 
+      /**
+       * In this validation we search for the User ID that should be encrypted inside
+       * the incoming JWT payload and see if it corresponds to something that exists
+       * in the application Database. If so, then the token is valid.
+       *
+       * In other words, we expect receive a claim called "user_id" [Long] inside the received
+       * JWT.
+       */
       validate { credential ->
-//        credential.payload.getClaim("user_id")
         val searchResult = Users.getUserById(credential.payload.getClaim("user_id").asLong())
         if (searchResult.code == HttpStatusCode.OK) {
           JWTPrincipal(credential.payload)
@@ -86,8 +92,12 @@ fun Application.configureAuthentication() {
         }
       }
 
-      challenge { defaultScheme, realm ->
-        call.respond(HttpStatusCode.Unauthorized, "Session expired. Log in again.")
+      /**
+       * If the incoming token verification fails, we return an Unauthorized response
+       * to the client, suggesting to retry to log in later.
+       */
+      challenge { _, _ ->
+        call.respond(HttpStatusCode.Unauthorized, "Not allowed to log in now. Try again later.")
       }
     }
   }
