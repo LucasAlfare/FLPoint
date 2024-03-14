@@ -1,13 +1,14 @@
 package com.lucasalfare.flpoint.server.routes
 
 import com.lucasalfare.flpoint.server.data.services.Users
+import com.lucasalfare.flpoint.server.security.DEFAULT_JWT_CONFIG
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.protected() {
-  authenticate("my-jwt-auth") {
+  authenticate(DEFAULT_JWT_CONFIG) {
     get("flpoint/users/{id}/protected") {
       call.parameters["id"]?.let {
         val result = Users.getUserById(it.toLong())

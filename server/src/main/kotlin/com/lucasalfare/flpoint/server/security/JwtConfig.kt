@@ -5,7 +5,10 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import java.util.*
 
-object JwtConfig {
+
+internal const val DEFAULT_JWT_CONFIG = "my-jwt-auth"
+
+internal object JwtConfig {
 
   // Fields must comes from ENV variables
   private const val SECRET = "MySecret"
