@@ -2,6 +2,7 @@ package com.lucasalfare.flpoint.server.data.services
 
 import com.lucasalfare.flpoint.server.data.MyDatabase
 import com.lucasalfare.flpoint.server.data.models.ServerResult
+import com.lucasalfare.flpoint.server.data.models.User
 import com.lucasalfare.flpoint.server.data.tables.UsersTable
 import com.lucasalfare.flpoint.server.security.PasswordHashing
 import io.ktor.http.*
@@ -40,5 +41,21 @@ object Users {
         ServerResult(HttpStatusCode.NotAcceptable, "Wrong login or password.")
       }
     }
+  }
+
+  suspend fun getUserById(id: Long): ServerResult {
+    MyDatabase.dbQuery {
+      UsersTable.selectAll().where { UsersTable.id eq id }.singleOrNull()?.let {
+        User(
+          id = it[UsersTable.id].value,
+          login = it[UsersTable.login],
+          hashedPassword = it[UsersTable.hashedPassword]
+        )
+      }
+    }?.let {
+      return ServerResult(HttpStatusCode.OK, it)
+    }
+
+    return ServerResult(HttpStatusCode.NotFound)
   }
 }
