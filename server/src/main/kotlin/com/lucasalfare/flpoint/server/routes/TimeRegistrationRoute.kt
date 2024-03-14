@@ -15,11 +15,12 @@ import io.ktor.server.routing.*
 fun Route.timeRegistration() {
   authenticate(DEFAULT_JWT_CONFIG) {
     post("/flpoint/users/{id}/time_registration") {
+
+      // Try to parse the "{id}" from URL
       call.parameters["id"]?.let { textPathId ->
         runCatching {
           val urlId = textPathId.toLong()
           val searchedUser = Users.getUserById(urlId)
-
           if (searchedUser.code == HttpStatusCode.OK) {
             runCatching {
               val registrationTime = call.receive<TimeRegistration>()
@@ -36,7 +37,8 @@ fun Route.timeRegistration() {
         }
       }
 
-      return@post call.respond(HttpStatusCode.BadRequest, "No User ID passed in URL.")
+      // This happens when the "{id}" could not to be parsed from the URL
+      return@post call.respond(HttpStatusCode.BadRequest, "Bad User ID passed in the URL.")
     }
   }
 }
