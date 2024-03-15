@@ -8,7 +8,7 @@ import java.util.*
 
 internal const val DEFAULT_JWT_CONFIG = "my-jwt-auth"
 
-internal object JwtConfig {
+internal object MyJwtConfig {
 
   // Fields must comes from ENV variables
   private const val SECRET = "MySecret"

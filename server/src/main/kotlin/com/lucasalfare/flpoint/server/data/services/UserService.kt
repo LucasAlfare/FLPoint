@@ -20,7 +20,7 @@ object Users {
       }.value
     }
 
-    return ServerResult(code = HttpStatusCode.OK)
+    return ServerResult(code = HttpStatusCode.OK, data = ("id" to id))
   }
 
   // TODO: refactor this to a dedicated validator

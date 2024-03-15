@@ -7,7 +7,7 @@ import com.lucasalfare.flpoint.server.routes.protected
 import com.lucasalfare.flpoint.server.routes.signup
 import com.lucasalfare.flpoint.server.routes.timeRegistration
 import com.lucasalfare.flpoint.server.security.DEFAULT_JWT_CONFIG
-import com.lucasalfare.flpoint.server.security.JwtConfig
+import com.lucasalfare.flpoint.server.security.MyJwtConfig
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -79,7 +79,7 @@ fun Application.configureSerialization() {
 fun Application.configureAuthentication() {
   install(Authentication) {
     jwt(DEFAULT_JWT_CONFIG) {
-      verifier(JwtConfig.getVerifier())
+      verifier(MyJwtConfig.getVerifier())
       realm = "FLPoint"
 
       /**
