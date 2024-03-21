@@ -6,6 +6,6 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 
 suspend fun respondError(call: ApplicationCall) {
-  val theError = AppResult.Failure<Unit, RequestError>(RequestError.BadUrl)
+  val theError = AppResult.Failure<Unit, RequestError>(RequestError.BadRequest)
   call.respond(theError.statusCode, theError.error)
 }

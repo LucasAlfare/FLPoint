@@ -60,12 +60,16 @@ fun Application.configureRouting() {
     login()
 
     /*
-    curl -d '{"dateTime": 8127681276192}' -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0NzE4NzJ9.zFKaIaLXa497fwcDJedtL8Y74-OYlzGoEBLZ1ZVXla8" -X POST http://localhost:3000/flpoint/users/1/time_registration
+    - Criar registro:
+      curl -d '{"dateTime": 8127681276192}' -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTEwMzQ3NzN9.jo8I2RmndOhyAGC9KzvnYmw-G7Mh1OHj66GULbnch6A" -X POST http://localhost:3000/flpoint/users/1/time_registration
+
+    - Obter todos os registros:
+      curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTEwMzQ0NzJ9.enc447rUxytn7KerJN5QKAA91w3RuvONJdO6SOceRBo" -X GET http://localhost:3000/flpoint/users/1/time_registration
      */
     timeRegistration()
 
     /*
-    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0NzE4NzJ9.zFKaIaLXa497fwcDJedtL8Y74-OYlzGoEBLZ1ZVXla8" -X GET http://localhost:3000/flpoint/users/1/protected
+    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTEwMzQ0NzJ9.enc447rUxytn7KerJN5QKAA91w3RuvONJdO6SOceRBo" -X GET http://localhost:3000/flpoint/users/1/protected
      */
     protected()
   }

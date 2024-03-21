@@ -31,5 +31,16 @@ fun Route.timeRegistration() {
         return@post respondError(call)
       }
     }
+
+    get("/flpoint/users/{id}/time_registration") {
+      try {
+        val id = call.parameters["id"]?.toLong() ?: return@get respondError(call)
+        when (val result = TimeRegistrations.getAllTimeRegistrationsByUserId(id)) {
+          is AppResult.Success -> return@get call.respond(result.statusCode, result.data)
+        }
+      } catch (e: Exception) {
+        return@get respondError(call)
+      }
+    }
   }
 }

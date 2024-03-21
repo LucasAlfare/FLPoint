@@ -36,6 +36,19 @@ object TimeRegistrations {
     return AppResult.Success(Unit)
   }
 
+  suspend fun getAllTimeRegistrationsByUserId(userId: Long): AppResult<List<TimeRegistration>, DatabaseError> {
+    val registrations = AppDB.query {
+      TimeRegistrationsTable
+        .selectAll()
+        .where { TimeRegistrationsTable.relatedUserId eq userId }
+        .map {
+          TimeRegistration(dateTime = it[TimeRegistrationsTable.dateTime])
+        }
+    }
+
+    return AppResult.Success(registrations)
+  }
+
   suspend fun getLastRegistrationByUserId(userId: Long): AppResult<TimeRegistration, DatabaseError> {
     AppDB.query {
       TimeRegistrationsTable

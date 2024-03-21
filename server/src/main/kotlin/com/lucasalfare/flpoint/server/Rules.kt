@@ -1,8 +1,14 @@
 package com.lucasalfare.flpoint.server
 
+@Suppress("MemberVisibilityCanBePrivate")
 class Rules {
 
   companion object {
+
+    const val ONE_SECOND = 1000
+    const val ONE_MINUTE = 60 * ONE_SECOND
+    const val ONE_HOUR = 60 * ONE_MINUTE
+    const val ONE_DAY = 24 * ONE_HOUR
 
     /**
      * The time between the last stored registration and the
@@ -12,7 +18,7 @@ class Rules {
      * This time is measured in milliseconds.
      *
      */
-    const val DEFAULT_MIN_REGISTRATION_INTERVAL = 1 * (1000)
+    const val DEFAULT_MIN_REGISTRATION_INTERVAL = 30 * ONE_MINUTE
 
     /**
      * If the difference between the received registration time
@@ -24,6 +30,6 @@ class Rules {
      *
      * This time is measured in milliseconds.
      */
-    const val DEFAULT_MAX_REGISTRATION_DELAY = 5 * (1000)
+    const val DEFAULT_MAX_REGISTRATION_DELAY = 2 * ONE_MINUTE
   }
 }

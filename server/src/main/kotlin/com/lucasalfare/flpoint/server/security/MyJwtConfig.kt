@@ -3,6 +3,7 @@ package com.lucasalfare.flpoint.server.security
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
+import com.lucasalfare.flpoint.server.Rules
 import java.util.*
 
 
@@ -13,7 +14,7 @@ internal object MyJwtConfig {
   // Fields must comes from ENV variables
   private const val SECRET = "MySecret"
   private const val ISSUER = "FLPoint"
-  private const val EXPIRATION_TIME = (1000 * 60) * 3 // 3 minutes
+  private const val EXPIRATION_TIME = Rules.ONE_DAY // TMP
 
   private val algorithm = Algorithm.HMAC256(SECRET)
 
