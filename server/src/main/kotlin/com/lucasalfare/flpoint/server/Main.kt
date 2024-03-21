@@ -1,7 +1,9 @@
 package com.lucasalfare.flpoint.server
 
-import com.lucasalfare.flpoint.server.data.MyDatabase
+import com.lucasalfare.flpoint.server.data.AppDB
 import com.lucasalfare.flpoint.server.data.services.Users
+import com.lucasalfare.flpoint.server.models.errors.AppResult
+import com.lucasalfare.flpoint.server.models.errors.RequestError
 import com.lucasalfare.flpoint.server.routes.login
 import com.lucasalfare.flpoint.server.routes.protected
 import com.lucasalfare.flpoint.server.routes.signup
@@ -20,7 +22,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun main() {
-  MyDatabase.initialize(
+  AppDB.initialize(
     username = "FLPointUsername",
     password = "FLPointPassword"
   )
@@ -59,12 +61,12 @@ fun Application.configureRouting() {
     login()
 
     /*
-    curl -d '{"dateTime": 8127681276192}' -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0MjkxMzZ9.bXLkCMEKnOjDZAgF6582aj5ef2WhbcTrzu_njh5J8YA" -X POST http://localhost:3000/flpoint/users/1/time_registration
+    curl -d '{"dateTime": 8127681276192}' -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0NzE4NzJ9.zFKaIaLXa497fwcDJedtL8Y74-OYlzGoEBLZ1ZVXla8" -X POST http://localhost:3000/flpoint/users/1/time_registration
      */
     timeRegistration()
 
     /*
-    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0MjYxMTl9.JGKX6reblrDcjIygl9h58NX9JBiuoQFVG7qmgVrjBAo" -X GET http://localhost:3000/flpoint/users/1/protected
+    curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsImlzcyI6IkZMUG9pbnQiLCJ1c2VyX2lkIjoxLCJleHAiOjE3MTA0NzE4NzJ9.zFKaIaLXa497fwcDJedtL8Y74-OYlzGoEBLZ1ZVXla8" -X GET http://localhost:3000/flpoint/users/1/protected
      */
     protected()
   }
@@ -91,11 +93,9 @@ fun Application.configureAuthentication() {
        * JWT.
        */
       validate { credential ->
-        val searchResult = Users.getUserById(credential.payload.getClaim("user_id").asLong())
-        if (searchResult.code == HttpStatusCode.OK) {
-          JWTPrincipal(credential.payload)
-        } else {
-          null
+        when (Users.getUserById(credential.payload.getClaim("user_id").asLong())) {
+          is AppResult.Success -> JWTPrincipal(credential.payload)
+          else -> null
         }
       }
 
@@ -116,4 +116,9 @@ fun Throwable.toErrorResponseString(): String {
     if (t.message != null) append("Message:\n\t${t.message}\n")
     if (t.cause != null) append("Cause:\n\t${t.cause}\n")
   }
+}
+
+suspend fun respondError(call: ApplicationCall) {
+  val theError = AppResult.Failure<Unit, RequestError>(RequestError.BadUrl)
+  call.respond(theError.statusCode, theError.error)
 }

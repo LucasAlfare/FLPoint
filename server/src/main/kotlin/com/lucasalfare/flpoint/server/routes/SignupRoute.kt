@@ -1,7 +1,8 @@
 package com.lucasalfare.flpoint.server.routes
 
-import com.lucasalfare.flpoint.server.data.models.dto.Credentials
 import com.lucasalfare.flpoint.server.data.services.Users
+import com.lucasalfare.flpoint.server.models.dto.Credentials
+import com.lucasalfare.flpoint.server.models.errors.AppResult
 import com.lucasalfare.flpoint.server.toErrorResponseString
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,8 +14,17 @@ fun Route.signup() {
   post("/flpoint/users/signup") {
     runCatching {
       val credentials = call.receive<Credentials>()
-      val result = Users.createUser(credentials.login, credentials.password)
-      return@post call.respond(result.code, result.data ?: "")
+      when (val result = Users.createUser(credentials)) {
+        is AppResult.Success -> {
+          return@post call.respond(result.statusCode, result.data)
+        }
+
+        is AppResult.Failure -> {
+          return@post call.respond(result.statusCode, result.error)
+        }
+
+        else -> {}
+      }
     }.onFailure {
       return@post call.respond(HttpStatusCode.InternalServerError, it.toErrorResponseString())
     }

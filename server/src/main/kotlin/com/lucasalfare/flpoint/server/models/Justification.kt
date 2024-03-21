@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.data.models
+package com.lucasalfare.flpoint.server.models
 
 data class Justification(
   val id: Long,

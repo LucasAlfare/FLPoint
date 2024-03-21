@@ -1,6 +1,8 @@
 package com.lucasalfare.flpoint.server.routes
 
 import com.lucasalfare.flpoint.server.data.services.Users
+import com.lucasalfare.flpoint.server.models.errors.AppResult
+import com.lucasalfare.flpoint.server.respondError
 import com.lucasalfare.flpoint.server.security.DEFAULT_JWT_CONFIG
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -11,11 +13,20 @@ fun Route.protected() {
   authenticate(DEFAULT_JWT_CONFIG) {
     get("flpoint/users/{id}/protected") {
       call.parameters["id"]?.let {
-        val result = Users.getUserById(it.toLong())
-        return@get call.respond(result.code, "Your SECRET data:\n[${result.data ?: "NOTHING FOUND!"}]")
+        when (val result = Users.getUserById(it.toLong())) {
+          is AppResult.Success -> {
+            return@get call.respond(result.statusCode, result.data)
+          }
+
+          is AppResult.Failure -> {
+            return@get call.respond(result.statusCode, result.error)
+          }
+
+          else -> {}
+        }
       }
 
-      return@get call.respond("Was not possible parse the ID from the URL but you are still seeing a PROTECTED route.")
+      respondError(call)
     }
   }
 }

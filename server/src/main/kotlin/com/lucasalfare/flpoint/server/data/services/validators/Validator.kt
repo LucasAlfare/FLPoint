@@ -1,6 +1,9 @@
 package com.lucasalfare.flpoint.server.data.services.validators
 
-interface Validator {
+import com.lucasalfare.flpoint.server.models.errors.AppError
+import com.lucasalfare.flpoint.server.models.errors.AppResult
 
-  suspend fun isValid(): Boolean
+interface Validator<out D, out E : AppError> {
+
+  suspend fun validate(): AppResult<D, E>
 }

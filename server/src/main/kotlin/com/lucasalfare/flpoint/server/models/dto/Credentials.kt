@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.data.models.dto
+package com.lucasalfare.flpoint.server.models.dto
 
 import kotlinx.serialization.Serializable
 

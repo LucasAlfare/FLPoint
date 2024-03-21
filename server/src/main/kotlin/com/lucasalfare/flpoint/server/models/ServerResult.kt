@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.data.models
+package com.lucasalfare.flpoint.server.models
 
 import io.ktor.http.*
 import kotlinx.serialization.Contextual

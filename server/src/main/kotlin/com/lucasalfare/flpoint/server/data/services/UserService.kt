@@ -1,63 +1,43 @@
 package com.lucasalfare.flpoint.server.data.services
 
-import com.lucasalfare.flpoint.server.data.MyDatabase
-import com.lucasalfare.flpoint.server.data.models.ServerResult
-import com.lucasalfare.flpoint.server.data.models.User
+import com.lucasalfare.flpoint.server.data.AppDB
 import com.lucasalfare.flpoint.server.data.tables.UsersTable
+import com.lucasalfare.flpoint.server.data.tables.UsersTable.hashedPassword
+import com.lucasalfare.flpoint.server.data.tables.UsersTable.login
+import com.lucasalfare.flpoint.server.models.User
+import com.lucasalfare.flpoint.server.models.dto.Credentials
+import com.lucasalfare.flpoint.server.models.errors.AppResult
+import com.lucasalfare.flpoint.server.models.errors.DatabaseError
 import com.lucasalfare.flpoint.server.security.PasswordHashing
-import io.ktor.http.*
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 
 object Users {
 
-  // TODO: does this needs dedicated validations?
-  suspend fun createUser(login: String, originalPassword: String): ServerResult {
-    val id = MyDatabase.dbQuery {
-      UsersTable.insertAndGetId {
-        it[UsersTable.login] = login
-        it[hashedPassword] = PasswordHashing.hashedPassword(originalPassword)
-      }.value
+  suspend fun createUser(credentials: Credentials): AppResult<Long, DatabaseError> {
+    // login is unique. If a repeated login is tried to be inserted, insertion fails
+    // this avoids double database lookup to check login existence before inserting
+    val id = try {
+      AppDB.query {
+        UsersTable.insertAndGetId {
+          it[login] = credentials.login
+          it[hashedPassword] = PasswordHashing.hashedPassword(credentials.password)
+        }.value
+      }
+    } catch (e: Exception) {
+      return AppResult.Failure(DatabaseError.Internal)
     }
 
-    return ServerResult(code = HttpStatusCode.OK, data = ("id" to id))
+    return AppResult.Success(id)
   }
 
-  // TODO: refactor this to a dedicated validator
-  suspend fun validLogin(login: String, originalPassword: String): ServerResult {
-    val search = MyDatabase.dbQuery {
-      UsersTable
-        .selectAll()
-        .where { UsersTable.login eq login }
+  suspend fun getUserById(id: Long): AppResult<User, DatabaseError> {
+    AppDB.query {
+      UsersTable.selectAll().where { UsersTable.id eq id }
         .singleOrNull()
-    }
+        ?.let { User(it[UsersTable.id].value, it[login], it[hashedPassword]) }
+    }?.let { return AppResult.Success(it) }
 
-    if (search == null) {
-      return ServerResult(HttpStatusCode.NotFound, "Login not found. Have you created access before?")
-    } else {
-      val actualHashed = search[UsersTable.hashedPassword]
-      val passwordCheck = PasswordHashing.checkPassword(originalPassword, actualHashed)
-      return if (passwordCheck) {
-        ServerResult(HttpStatusCode.OK, search[UsersTable.id].value)
-      } else {
-        ServerResult(HttpStatusCode.NotAcceptable, "Wrong login or password.")
-      }
-    }
-  }
-
-  suspend fun getUserById(id: Long): ServerResult {
-    MyDatabase.dbQuery {
-      UsersTable.selectAll().where { UsersTable.id eq id }.singleOrNull()?.let {
-        User(
-          id = it[UsersTable.id].value,
-          login = it[UsersTable.login],
-          hashedPassword = it[UsersTable.hashedPassword]
-        )
-      }
-    }?.let {
-      return ServerResult(HttpStatusCode.OK, it)
-    }
-
-    return ServerResult(HttpStatusCode.NotFound, "User not found")
+    return AppResult.Failure(DatabaseError.NotFound)
   }
 }

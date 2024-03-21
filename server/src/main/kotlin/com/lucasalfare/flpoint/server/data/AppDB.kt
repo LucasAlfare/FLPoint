@@ -14,7 +14,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
-object MyDatabase {
+object AppDB {
 
   private lateinit var hikariDataSource: HikariDataSource
 
@@ -33,7 +33,7 @@ object MyDatabase {
     }
   }
 
-  suspend fun <T> dbQuery(block: suspend () -> T): T =
+  suspend fun <T> query(block: suspend () -> T): T =
     newSuspendedTransaction(
       context = Dispatchers.IO,
       db = Database.connect(hikariDataSource)
