@@ -21,8 +21,12 @@ data class TimeRegistrationCreationValidator(
       }
     }
 
+    // 2. checks if actual time candidate is too high, compared with the current server time
     if (System.currentTimeMillis() - candidateTime > Rules.DEFAULT_MAX_REGISTRATION_DELAY)
       return AppResult.Failure(BusinessError.TimeRegistrationExceedsLimitDelay)
+
+    // 3. Checks the number of last registrations performed in a single time interval
+    // TODO
 
     return AppResult.Success(Unit)
   }
