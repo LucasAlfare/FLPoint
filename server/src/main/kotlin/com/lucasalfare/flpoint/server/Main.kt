@@ -2,8 +2,7 @@ package com.lucasalfare.flpoint.server
 
 import com.lucasalfare.flpoint.server.data.AppDB
 import com.lucasalfare.flpoint.server.data.services.Users
-import com.lucasalfare.flpoint.server.models.errors.AppResult
-import com.lucasalfare.flpoint.server.models.errors.RequestError
+import com.lucasalfare.flpoint.server.models.errors.AppResult.Success
 import com.lucasalfare.flpoint.server.routes.login
 import com.lucasalfare.flpoint.server.routes.protected
 import com.lucasalfare.flpoint.server.routes.signup
@@ -94,7 +93,7 @@ fun Application.configureAuthentication() {
        */
       validate { credential ->
         when (Users.getUserById(credential.payload.getClaim("user_id").asLong())) {
-          is AppResult.Success -> JWTPrincipal(credential.payload)
+          is Success -> JWTPrincipal(credential.payload)
           else -> null
         }
       }
@@ -116,9 +115,4 @@ fun Throwable.toErrorResponseString(): String {
     if (t.message != null) append("Message:\n\t${t.message}\n")
     if (t.cause != null) append("Cause:\n\t${t.cause}\n")
   }
-}
-
-suspend fun respondError(call: ApplicationCall) {
-  val theError = AppResult.Failure<Unit, RequestError>(RequestError.BadUrl)
-  call.respond(theError.statusCode, theError.error)
 }

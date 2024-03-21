@@ -21,17 +21,18 @@ data class UserExistenceByCredentialsValidator(val credentials: Credentials) : V
     if (search == null)
       return AppResult.Failure(DatabaseError.NotFound)
 
-    search.let {
-      User(
-        it[UsersTable.id].value,
-        it[UsersTable.login],
-        it[UsersTable.hashedPassword]
+    val u = User(
+      search[UsersTable.id].value,
+      search[UsersTable.login],
+      search[UsersTable.hashedPassword]
+    )
+
+    if (
+      PasswordHashing.checkPassword(
+        original = credentials.password,
+        hashed = u.hashedPassword
       )
-    }.let {
-      if (PasswordHashing.checkPassword(credentials.password, it.hashedPassword)) {
-        return AppResult.Success(it.id)
-      }
-    }
+    ) return AppResult.Success(u.id)
 
     return AppResult.Failure(DatabaseError.NotFound)
   }

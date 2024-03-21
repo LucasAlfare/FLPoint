@@ -15,6 +15,7 @@ object TimeRegistrations {
   suspend fun createTimeRegistration(dateTime: Long, relatedUserId: Long): AppResult<Unit, AppError> {
     when (val validationResult = TimeRegistrationCreationValidator(dateTime, relatedUserId).validate()) {
       is AppResult.Success -> {
+        // try block to catch database errors, not validation errors
         try {
           AppDB.query {
             TimeRegistrationsTable.insert {
