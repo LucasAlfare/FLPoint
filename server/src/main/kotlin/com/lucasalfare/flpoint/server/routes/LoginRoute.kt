@@ -4,6 +4,7 @@ import com.lucasalfare.flpoint.server.data.services.validators.UserExistenceByCr
 import com.lucasalfare.flpoint.server.models.dto.Credentials
 import com.lucasalfare.flpoint.server.models.errors.AppResult.Failure
 import com.lucasalfare.flpoint.server.models.errors.AppResult.Success
+import com.lucasalfare.flpoint.server.security.MyJwtConfig
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -16,7 +17,7 @@ fun Route.login() {
 
       when (val result = UserExistenceByCredentialsValidator(credentials).validate()) {
         is Success -> {
-          return@post call.respond(result.statusCode, result.data)
+          return@post call.respond(result.statusCode, MyJwtConfig.generateJwt(result.data))
         }
 
         is Failure -> {
