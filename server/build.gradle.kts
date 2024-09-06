@@ -33,6 +33,8 @@ dependencies {
   // Dependencies for database manipulation
   implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
   implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+  implementation("org.jetbrains.exposed:exposed-kotlin-datetime:$exposed_version")
+
   /*
   Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
   TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
