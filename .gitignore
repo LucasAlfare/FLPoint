@@ -4,6 +4,7 @@ structure.md
 
 # Ignore local database files
 *.db
+*.env
 
 .idea
 .gradle

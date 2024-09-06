@@ -1,8 +1,10 @@
 val ktor_version: String by project
+val exposed_version: String by project
 
 plugins {
   kotlin("jvm")
-  id("org.jetbrains.kotlin.plugin.serialization") version "1.8.0"
+  id("org.jetbrains.kotlin.plugin.serialization")
+  application
 }
 
 dependencies {
@@ -17,6 +19,7 @@ dependencies {
   // dependências para gerenciamento de JWT
   implementation("io.ktor:ktor-server-auth:$ktor_version")
   implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
+  // implementation("io.ktor:ktor-serialization-jackson:$ktor_version")
 
   // dependências para obter auxiliares de datas
   implementation("io.ktor:ktor-utils:$ktor_version")
@@ -28,8 +31,8 @@ dependencies {
   implementation("org.mindrot:jbcrypt:0.4")
 
   // Dependencies for database manipulation
-  implementation("org.jetbrains.exposed:exposed-core:0.48.0")
-  implementation("org.jetbrains.exposed:exposed-jdbc:0.48.0")
+  implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
+  implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
   /*
   Database.connect("jdbc:sqlite:/data/data.db", "org.sqlite.JDBC")
   TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
@@ -46,4 +49,23 @@ dependencies {
 
   // misc, provavelmente melhor lugar para isso é onde contiver clients....
   implementation("io.ktor:ktor-server-cors:$ktor_version")
+}
+
+kotlin {
+  jvmToolchain(17)
+}
+
+application {
+  // Define the main class for the application.
+  mainClass.set("com.lucasalfare.flpoint.server.MainKt")
+}
+
+tasks.withType<Jar> {
+  manifest {
+    // "Main-Class" is set to the actual main file path
+    attributes["Main-Class"] = application.mainClass
+  }
+
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from(configurations.compileClasspath.map { config -> config.map { if (it.isDirectory) it else zipTree(it) } })
 }
