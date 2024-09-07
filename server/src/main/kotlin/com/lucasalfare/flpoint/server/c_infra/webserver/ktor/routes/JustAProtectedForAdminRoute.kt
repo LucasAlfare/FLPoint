@@ -11,7 +11,6 @@ import io.ktor.server.routing.*
 
 fun Routing.protectedForAdminRoute() {
   authenticate("flpoint-jwt-auth") {
-    // curl -v http://localhost:7171/auth
     get("/protected-for-admin") {
       val principal = call.principal<JWTPrincipal>()
 

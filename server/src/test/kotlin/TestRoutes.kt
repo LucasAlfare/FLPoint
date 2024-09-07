@@ -3,11 +3,11 @@ import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryUsersHandler
-import com.lucasalfare.flpoint.server.c_infra.security.hashing.dummy.DummyPasswordHashing
-import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configureAuthentication
-import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configureRouting
-import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configureSerialization
-import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configureStatusPages
+import com.lucasalfare.flpoint.server.c_infra.security.hashing.dummy.DummyPasswordHasher
+import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.authenticationConfiguration
+import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.routingConfiguration
+import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.serializationConfiguration
+import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.statusPagesConfiguration
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -301,13 +301,13 @@ class TestRoutes {
 
 private fun ApplicationTestBuilder.setupTestClient(): HttpClient {
   application {
-    configureAuthentication()
-    configureSerialization()
-    configureStatusPages()
-    configureRouting(
-      UserUsecases(
-        MemoryUsersHandler,
-        DummyPasswordHashing
+    authenticationConfiguration()
+    serializationConfiguration()
+    statusPagesConfiguration()
+    routingConfiguration(
+      userUsecases = UserUsecases(
+        usersHandler = MemoryUsersHandler,
+        passwordHasher = DummyPasswordHasher
       )
     )
   }

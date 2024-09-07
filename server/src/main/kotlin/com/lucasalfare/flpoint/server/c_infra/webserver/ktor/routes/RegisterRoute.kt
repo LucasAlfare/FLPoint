@@ -8,7 +8,6 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-// curl -X http://localhost:7171 -H "Content-Type: application/json" -d '{"name": "lucas", "email": "asdf@qwer.com", "plainPassword": "zxcv", "targetRole": "Standard"}'
 // curl -H 'Content-Type: application/json' -d '{"name": "lucas", "email": "asdf@qwer.com", "plainPassword": "zxcv", "targetRole": "Standard"}' -X POST http://localhost:7171/register
 fun Routing.registerPostRoute(userUsecases: UserUsecases) {
   post("/register") {
