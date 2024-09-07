@@ -1,7 +1,6 @@
 package com.lucasalfare.flpoint.server.c_infra.data.exposed
 
-import com.lucasalfare.flpoint.server.AppDB
-import com.lucasalfare.flpoint.server.Constants
+import com.lucasalfare.flpoint.server.a_domain.Constants
 import org.jetbrains.exposed.sql.SchemaUtils
 
 object ExposedInitializer {

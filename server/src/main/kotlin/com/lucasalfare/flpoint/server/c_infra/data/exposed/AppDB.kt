@@ -1,7 +1,8 @@
 @file:Suppress("SameParameterValue")
 
-package com.lucasalfare.flpoint.server
+package com.lucasalfare.flpoint.server.c_infra.data.exposed
 
+import com.lucasalfare.flpoint.server.a_domain.Constants
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import com.zaxxer.hikari.util.IsolationLevel

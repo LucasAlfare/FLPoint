@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server
+package com.lucasalfare.flpoint.server.a_domain
 
 /**
  * A utility class that holds constant values used throughout the application.

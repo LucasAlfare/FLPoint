@@ -16,6 +16,9 @@ dependencies {
   implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
   implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 
+  // status pages
+  implementation("io.ktor:ktor-server-status-pages:$ktor_version")
+
   // dependências para gerenciamento de JWT
   implementation("io.ktor:ktor-server-auth:$ktor_version")
   implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
