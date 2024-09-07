@@ -72,7 +72,7 @@ object ExposedUsersHandler : UsersHandler {
     TODO("Not yet implemented")
   }
 
-  override suspend fun removeAll(): Result<Boolean> {
+  override suspend fun clear(): Result<Boolean> {
     TODO("Not yet implemented")
   }
 }

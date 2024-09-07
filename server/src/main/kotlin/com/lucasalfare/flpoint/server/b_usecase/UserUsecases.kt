@@ -1,16 +1,17 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package com.lucasalfare.flpoint.server.b_usecase
 
-import com.lucasalfare.flpoint.server.a_domain.JwtGenerator
 import com.lucasalfare.flpoint.server.a_domain.PasswordHashing
 import com.lucasalfare.flpoint.server.a_domain.UsersHandler
 import com.lucasalfare.flpoint.server.a_domain.model.LoginError
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
+import com.lucasalfare.flpoint.server.c_infra.security.jwt.ktor.KtorJwtGenerator
 
 class UserUsecases(
   var usersHandler: UsersHandler,
-  var passwordHashing: PasswordHashing,
-  var jwtGenerator: JwtGenerator
+  var passwordHashing: PasswordHashing
 ) {
 
   suspend fun createUser(createUserDTO: CreateUserDTO) = usersHandler.create(
@@ -28,6 +29,6 @@ class UserUsecases(
     val passwordMatches = passwordHashing.plainMatchHashed(basicCredentialsDTO.plainPassword, user.hashedPassword)
     if (!passwordMatches) throw LoginError()
 
-    return jwtGenerator.generate(user.email)
+    return KtorJwtGenerator.generate(user.email, user.role)
   }
 }

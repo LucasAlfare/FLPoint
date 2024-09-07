@@ -28,5 +28,5 @@ interface UsersHandler {
 
   suspend fun remove(id: Int): Result<Boolean>
 
-  suspend fun removeAll(): Result<Boolean>
+  suspend fun clear(): Result<Boolean>
 }

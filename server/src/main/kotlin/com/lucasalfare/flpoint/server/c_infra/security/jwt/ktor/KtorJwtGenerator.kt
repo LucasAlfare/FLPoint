@@ -4,24 +4,19 @@ package com.lucasalfare.flpoint.server.c_infra.security.jwt.ktor
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.lucasalfare.flpoint.server.a_domain.JwtGenerator
+import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 
-// this abstraction is bad
-object KtorJwtGenerator : JwtGenerator {
+object KtorJwtGenerator {
 
   private val jwtAlgorithmSignSecret = "JWT_ALGORITHM_SECRET"
 
-  override fun getJwtVerifier(): Any? {
-    return JWT
-      .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
-      .build()
-  }
+  val verifier = JWT
+    .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
+    .build()
 
-  override fun generate(
-    withClaim: String // login/email
-  ): String =
+  fun generate(login: String, role: UserRole): String =
     JWT.create()
-//      .withExpiresAt(Date(System.currentTimeMillis() + (60000 * 10)))
-      .withClaim("login/email", withClaim)
+      .withClaim("login", login)
+      .withClaim("role", role.name)
       .sign(Algorithm.HMAC256(jwtAlgorithmSignSecret))
 }
