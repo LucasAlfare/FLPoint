@@ -21,7 +21,7 @@ fun Routing.protectedForAdminRoute() {
       if (role == UserRole.Admin) {
         return@get call.respond(
           HttpStatusCode.OK,
-          "You have are authorized to access this route"
+          "You are an admin and have are authorized to access this route"
         )
       } else {
         throw LoginError()

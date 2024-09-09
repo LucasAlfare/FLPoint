@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server.c_infra.webserver.ktor
 
+import com.lucasalfare.flpoint.server.b_usecase.TimeRegistrationUseCases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.authenticationConfiguration
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.routingConfiguration
@@ -9,14 +10,18 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
 class KtorLauncher(
-  val userUsecases: UserUsecases
+  val userUsecases: UserUsecases,
+  val timeRegistrationUseCases: TimeRegistrationUseCases
 ) {
   fun launch() {
     embeddedServer(Netty, port = 7171) {
       serializationConfiguration()
       statusPagesConfiguration()
       authenticationConfiguration()
-      routingConfiguration(userUsecases)
+      routingConfiguration(
+        userUsecases,
+        timeRegistrationUseCases
+      )
     }.start(true)
   }
 }
