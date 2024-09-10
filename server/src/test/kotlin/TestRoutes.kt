@@ -1,9 +1,9 @@
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
-import com.lucasalfare.flpoint.server.b_usecase.TimeRegistrationsUseCases
+import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
-import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryTimeRegistrationsHandler
+import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryPointsHandler
 import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryUsersHandler
 import com.lucasalfare.flpoint.server.c_infra.security.hashing.dummy.DummyPasswordHasher
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.authenticationConfiguration
@@ -311,8 +311,8 @@ private fun ApplicationTestBuilder.setupTestClient(): HttpClient {
         usersHandler = MemoryUsersHandler,
         passwordHasher = DummyPasswordHasher
       ),
-      timeRegistrationsUseCases = TimeRegistrationsUseCases(
-        MemoryTimeRegistrationsHandler
+      pointUsecases = PointUsecases(
+        MemoryPointsHandler
       )
     )
   }

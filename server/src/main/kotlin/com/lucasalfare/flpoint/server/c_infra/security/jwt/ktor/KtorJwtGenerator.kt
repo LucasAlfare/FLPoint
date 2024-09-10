@@ -3,6 +3,7 @@
 package com.lucasalfare.flpoint.server.c_infra.security.jwt.ktor
 
 import com.auth0.jwt.JWT
+import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 
@@ -10,7 +11,7 @@ object KtorJwtGenerator {
 
   private val jwtAlgorithmSignSecret = "JWT_ALGORITHM_SECRET"
 
-  val verifier = JWT
+  val verifier: JWTVerifier = JWT
     .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
     .build()
 

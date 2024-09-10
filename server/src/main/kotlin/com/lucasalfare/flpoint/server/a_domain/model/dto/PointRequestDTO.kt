@@ -4,7 +4,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ClockInRequestDTO(
+data class PointRequestDTO(
   val userId: Int,
   val timestamp: LocalDateTime
 )

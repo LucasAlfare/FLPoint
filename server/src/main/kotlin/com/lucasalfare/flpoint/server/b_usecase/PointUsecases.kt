@@ -1,19 +1,19 @@
 package com.lucasalfare.flpoint.server.b_usecase
 
-import com.lucasalfare.flpoint.server.a_domain.TimeRegistrationsHandler
+import com.lucasalfare.flpoint.server.a_domain.PointsHandler
 import com.lucasalfare.flpoint.server.a_domain.model.UsecaseRuleError
-import com.lucasalfare.flpoint.server.a_domain.model.dto.ClockInRequestDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.PointRequestDTO
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.minutes
 
-class TimeRegistrationsUseCases(
-  var timeRegistrationsHandler: TimeRegistrationsHandler
+class PointUsecases(
+  var pointsHandler: PointsHandler
 ) {
 
-  suspend fun createTimeRegistration(clockInRequestDTO: ClockInRequestDTO): Result<Int> {
+  suspend fun createTimeRegistration(pointRequestDTO: PointRequestDTO): Result<Int> {
     /*
     - we assume that request is pre-validated;
     - then:
@@ -25,20 +25,20 @@ class TimeRegistrationsUseCases(
       - if rules ok, then create registration;
       - otherwise,
      */
-    val result = timeRegistrationsHandler.get(clockInRequestDTO.userId)
+    val result = pointsHandler.get(pointRequestDTO.userId)
 
     if (result.isSuccess) {
       val registrations = result.getOrNull()
       if (registrations != null) {
         if (registrations.isNotEmpty()) {
           if (
-            !isAtMax1MinuteAwayFromServer(clockInRequestDTO.timestamp) ||
-            !passedAtLeast30MinutesFromLast(registrations.last().timestamp, clockInRequestDTO.timestamp)
+            !isAtMax1MinuteAwayFromServer(pointRequestDTO.timestamp) ||
+            !passedAtLeast30MinutesFromLast(registrations.last().timestamp, pointRequestDTO.timestamp)
           ) {
             throw UsecaseRuleError()
           }
 
-          return timeRegistrationsHandler.create(clockInRequestDTO.userId, clockInRequestDTO.timestamp)
+          return pointsHandler.create(pointRequestDTO.userId, pointRequestDTO.timestamp)
         }
       }
     }
