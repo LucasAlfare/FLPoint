@@ -7,10 +7,4 @@ import kotlinx.serialization.Serializable
 data class ClockInRequestDTO(
   val userId: Int,
   val timestamp: LocalDateTime
-) {
-
-  init {
-    // TODO: validate here only integrity of fields.
-    // TODO: meaning of then will be validated in use case.
-  }
-}
+)

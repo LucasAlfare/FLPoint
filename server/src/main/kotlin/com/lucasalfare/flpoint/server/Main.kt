@@ -3,7 +3,7 @@ package com.lucasalfare.flpoint.server
 import com.lucasalfare.flpoint.server.a_domain.PasswordHasher
 import com.lucasalfare.flpoint.server.a_domain.TimeRegistrationsHandler
 import com.lucasalfare.flpoint.server.a_domain.UsersHandler
-import com.lucasalfare.flpoint.server.b_usecase.TimeRegistrationUseCases
+import com.lucasalfare.flpoint.server.b_usecase.TimeRegistrationsUseCases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.data.exposed.ExposedInitializer
 import com.lucasalfare.flpoint.server.c_infra.data.exposed.ExposedTimeRegistrationsHandler
@@ -21,10 +21,13 @@ fun main() {
     passwordHasher
   )
 
-  val timeRegistrationUseCases = TimeRegistrationUseCases(
+  val timeRegistrationsUseCases = TimeRegistrationsUseCases(
     timeRegistrationsHandler
   )
 
   ExposedInitializer.initialize()
-  KtorLauncher(userUsecases).launch()
+  KtorLauncher(
+    userUsecases,
+    timeRegistrationsUseCases
+  ).launch()
 }

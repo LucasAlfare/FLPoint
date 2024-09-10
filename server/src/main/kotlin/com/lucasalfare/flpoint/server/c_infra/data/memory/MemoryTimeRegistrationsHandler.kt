@@ -13,4 +13,11 @@ object MemoryTimeRegistrationsHandler : TimeRegistrationsHandler {
     timeRegistrations += TimeRegistration(nextId, relatedUser, dateTime)
     return Result.success(nextId)
   }
+
+  override suspend fun get(relatedUser: Int) =
+    Result.success(
+      timeRegistrations
+        .filter { it.relatedUserId == relatedUser }
+        .sortedBy { it.timestamp }
+    )
 }
