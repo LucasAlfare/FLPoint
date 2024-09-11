@@ -8,4 +8,6 @@ interface PointsHandler {
   suspend fun create(relatedUser: Int, dateTime: LocalDateTime): Result<Int>
 
   suspend fun get(relatedUser: Int): Result<List<Point>>
+
+  suspend fun clear(): Result<Boolean>
 }

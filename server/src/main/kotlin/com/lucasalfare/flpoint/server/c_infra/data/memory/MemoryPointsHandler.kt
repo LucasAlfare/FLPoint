@@ -20,4 +20,9 @@ object MemoryPointsHandler : PointsHandler {
         .filter { it.relatedUserId == relatedUser }
         .sortedBy { it.timestamp }
     )
+
+  override suspend fun clear(): Result<Boolean> {
+    points.clear()
+    return Result.success(true)
+  }
 }

@@ -12,4 +12,8 @@ object ExposedPointsHandler : PointsHandler {
   override suspend fun get(relatedUser: Int): Result<List<Point>> {
     TODO("Not yet implemented")
   }
+
+  override suspend fun clear(): Result<Boolean> {
+    TODO("Not yet implemented")
+  }
 }

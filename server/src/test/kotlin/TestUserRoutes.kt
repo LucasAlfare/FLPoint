@@ -23,7 +23,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class TestRoutes {
+class TestUserRoutes {
 
   @BeforeTest
   fun setup() {
@@ -209,7 +209,7 @@ class TestRoutes {
 
     val badJwt =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-    val protectedAcessResponse = c.get("/protected") {
+    val protectedAccessResponse = c.get("/protected") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $badJwt")
       }
@@ -217,7 +217,7 @@ class TestRoutes {
 
     assertEquals(
       expected = HttpStatusCode.Unauthorized,
-      actual = protectedAcessResponse.status
+      actual = protectedAccessResponse.status
     )
   }
 

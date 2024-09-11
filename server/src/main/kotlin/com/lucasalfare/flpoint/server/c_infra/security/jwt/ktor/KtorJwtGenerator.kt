@@ -15,8 +15,13 @@ object KtorJwtGenerator {
     .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
     .build()
 
-  fun generate(login: String, role: UserRole): String =
+  fun generate(
+    id: Int,
+    login: String,
+    role: UserRole
+  ): String =
     JWT.create()
+      .withClaim("id", id)
       .withClaim("login", login)
       .withClaim("role", role.name)
       .sign(Algorithm.HMAC256(jwtAlgorithmSignSecret))

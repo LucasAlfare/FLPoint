@@ -15,7 +15,7 @@ fun Routing.protectedForAdminRoute() {
       val principal = call.principal<JWTPrincipal>()
 
       val role = enumValueOf<UserRole>(
-        principal?.payload?.getClaim("role")?.toString()?.replace("\"", "") ?: UserRole.Standard.name
+        principal?.payload?.getClaim("role")?.asString()?.replace("\"", "") ?: UserRole.Standard.name
       )
 
       if (role == UserRole.Admin) {

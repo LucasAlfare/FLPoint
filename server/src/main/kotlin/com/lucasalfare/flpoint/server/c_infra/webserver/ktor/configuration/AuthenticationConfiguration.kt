@@ -17,11 +17,16 @@ fun Application.authenticationConfiguration() {
       verifier(KtorJwtGenerator.verifier)
 
       validate { credential ->
+        val id = credential.payload.getClaim("id").asInt()
         val login = credential.payload.getClaim("login").asString()
         val role = credential.payload.getClaim("role").asString()
 
         // Valida se o login e a role existem no token
-        if (login.isNotBlank() && role.isNotBlank()) {
+        if (
+          id != null &&
+          login.isNotBlank() &&
+          role.isNotBlank()
+        ) {
           JWTPrincipal(credential.payload)
         } else {
           null // Token inválido se algum claim estiver vazio

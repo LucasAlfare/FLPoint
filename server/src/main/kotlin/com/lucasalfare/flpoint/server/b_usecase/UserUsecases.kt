@@ -29,6 +29,10 @@ class UserUsecases(
     val passwordMatches = passwordHasher.plainMatchesHashed(basicCredentialsDTO.plainPassword, user.hashedPassword)
     if (!passwordMatches) throw LoginError()
 
-    return KtorJwtGenerator.generate(user.email, user.role)
+    return KtorJwtGenerator.generate(
+      id = user.id,
+      login = user.email,
+      role = user.role
+    )
   }
 }
