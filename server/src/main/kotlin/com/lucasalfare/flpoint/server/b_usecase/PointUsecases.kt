@@ -30,6 +30,7 @@ class PointUsecases(
       val userPoints = result.getOrNull()
       if (userPoints != null) {
         if (userPoints.isNotEmpty()) {
+          // TODO: logic!
           if (PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = pointRequestDTO.timestamp)) {
             throw UsecaseRuleError()
           }
