@@ -21,8 +21,6 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -73,7 +71,7 @@ class TestPointRoutes {
       contentType(ContentType.Application.Json)
 
 //      Instant.fromEpochMilliseconds(System.currentTimeMillis() - (10 * 60 * 1000)).toLocalDateTime(TimeZone.currentSystemDefault())
-      val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+      val now = Clock.System.now()
 
       setBody(PointRequestDTO(timestamp = now))
     }
@@ -119,7 +117,7 @@ class TestPointRoutes {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")
       }
       contentType(ContentType.Application.Json)
-      val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+      val now = Clock.System.now()
       setBody(PointRequestDTO(timestamp = now))
     }
 
@@ -128,7 +126,7 @@ class TestPointRoutes {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")
       }
       contentType(ContentType.Application.Json)
-      val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+      val now = Clock.System.now()
       setBody(PointRequestDTO(timestamp = now))
     }
 

@@ -31,7 +31,7 @@ class PointUsecases(
       if (userPoints != null) {
         if (userPoints.isNotEmpty()) {
           // TODO: logic!
-          if (PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = pointRequestDTO.timestamp)) {
+          if (PointUsecasesRules.allPasses(last = userPoints.last().instant, check = pointRequestDTO.timestamp)) {
             throw UsecaseRuleError()
           }
         }
