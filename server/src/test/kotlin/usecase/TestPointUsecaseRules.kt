@@ -1,9 +1,7 @@
 package usecase
 
 import com.lucasalfare.flpoint.server.b_usecase.rule.PointUsecasesRules
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,16 +10,48 @@ import kotlin.test.assertTrue
 class TestPointUsecaseRules {
 
   @Test
-  fun `test isAtMax1MinuteAwayFromServer() rule`() {
-    val after1second = Instant.fromEpochMilliseconds(System.currentTimeMillis() + (1 * 1000))
-    assertTrue(
-      PointUsecasesRules.isAtMax1MinuteAwayFromServer(after1second.toLocalDateTime(TimeZone.currentSystemDefault()))
-    )
+  fun `test time within valid range`() {
+    val now = Clock.System.now()
+    val withinValidRange = now.minus(5, DateTimeUnit.SECOND) // 5 seconds in the past
+    val checkTime = withinValidRange.toLocalDateTime(TimeZone.currentSystemDefault())
 
-    val after2seconds = Instant.fromEpochMilliseconds(System.currentTimeMillis() + (2 * 1000))
-    assertFalse(
-      PointUsecasesRules.isAtMax1MinuteAwayFromServer(after2seconds.toLocalDateTime(TimeZone.currentSystemDefault()))
-    )
+    assertTrue(PointUsecasesRules.isWithinValidTimeRange(checkTime))
+  }
+
+  @Test
+  fun `test time exactly 1 second ahead`() {
+    val now = Clock.System.now()
+    val exactly1SecondInFuture = now.plus(1, DateTimeUnit.SECOND) // 1 second in the future
+    val checkTime = exactly1SecondInFuture.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    assertTrue(PointUsecasesRules.isWithinValidTimeRange(checkTime))
+  }
+
+  @Test
+  fun `test time more than 1 second ahead`() {
+    val now = Clock.System.now()
+    val moreThan1SecondInFuture = now.plus(2, DateTimeUnit.SECOND) // 2 seconds in the future
+    val checkTime = moreThan1SecondInFuture.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    assertFalse(PointUsecasesRules.isWithinValidTimeRange(checkTime))
+  }
+
+  @Test
+  fun `test time more than 10 seconds in the past`() {
+    val now = Clock.System.now()
+    val moreThan10SecondsInPast = now.minus(11, DateTimeUnit.SECOND) // 11 seconds in the past
+    val checkTime = moreThan10SecondsInPast.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    assertFalse(PointUsecasesRules.isWithinValidTimeRange(checkTime))
+  }
+
+  @Test
+  fun `test time exactly 10 seconds in the past`() {
+    val now = Clock.System.now()
+    val exactly10SecondsPast = now.minus(10, DateTimeUnit.SECOND) // Exactly 10 seconds in the past
+    val checkTime = exactly10SecondsPast.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    assertTrue(PointUsecasesRules.isWithinValidTimeRange(checkTime))
   }
 
   @Test
