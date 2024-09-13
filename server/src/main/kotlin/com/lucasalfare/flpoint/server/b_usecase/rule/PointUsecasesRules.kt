@@ -7,7 +7,9 @@ import kotlin.time.Duration.Companion.minutes
 object PointUsecasesRules {
 
   fun allPasses(last: Instant, check: Instant): Boolean {
-    return isWithinValidTimeRange(check) && passedAtLeast30MinutesFromLast(last, check)
+    if (isWithinValidTimeRange(check)) return false
+    if (isAtLeast30MinFromLast(last, check)) return false
+    return true
   }
 
   fun isWithinValidTimeRange(check: Instant): Boolean {
@@ -18,7 +20,7 @@ object PointUsecasesRules {
     return checkMs <= nowMs + 1000L && checkMs >= nowMs - 10_000L
   }
 
-  fun passedAtLeast30MinutesFromLast(last: Instant, check: Instant): Boolean {
+  fun isAtLeast30MinFromLast(last: Instant, check: Instant): Boolean {
     // interval between last and check must be, at least, 30 minutes
     return check - last >= 30.minutes
   }

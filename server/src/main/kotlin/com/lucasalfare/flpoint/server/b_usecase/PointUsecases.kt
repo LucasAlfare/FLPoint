@@ -14,7 +14,7 @@ class PointUsecases(
     pointRequestDTO: PointRequestDTO
   ): Result<Int> {
     /*
-    - we assume that request is pre-validated;
+    - we assume that request body fields is pre-validated;
     - then:
       - get all registrations of request user;
       - if there are none, then just create;
@@ -22,7 +22,7 @@ class PointUsecases(
         - request time is, at max, 1 minute away from server;
         - difference between last: must be >= 30 minutes;
       - if rules ok, then create registration;
-      - otherwise,
+      - otherwise, throw error
      */
     val result = pointsHandler.get(relatedUserId)
 
@@ -31,7 +31,9 @@ class PointUsecases(
       if (userPoints != null) {
         if (userPoints.isNotEmpty()) {
           // TODO: logic!
-          if (PointUsecasesRules.allPasses(last = userPoints.last().instant, check = pointRequestDTO.timestamp)) {
+          if (
+            !PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = pointRequestDTO.timestamp)
+          ) {
             throw UsecaseRuleError()
           }
         }

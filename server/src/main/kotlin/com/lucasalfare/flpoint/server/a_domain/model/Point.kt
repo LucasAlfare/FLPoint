@@ -5,5 +5,5 @@ import kotlinx.datetime.Instant
 data class Point(
   val id: Int,
   val relatedUserId: Int,
-  val instant: Instant
+  val timestamp: Instant
 )

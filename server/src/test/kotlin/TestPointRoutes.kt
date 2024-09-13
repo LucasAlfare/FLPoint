@@ -40,7 +40,7 @@ class TestPointRoutes {
   fun `test create point success route`() = testApplication {
     val c = setupTestClient()
 
-    val resisterResponse = c.post("/register") {
+    c.post("/register") {
       contentType(ContentType.Application.Json)
       setBody(
         CreateUserDTO(
@@ -52,7 +52,7 @@ class TestPointRoutes {
       )
     }
 
-    val loginResponse = c.post("/login") {
+    val generatedJwt = c.post("/login") {
       contentType(ContentType.Application.Json)
       setBody(
         BasicCredentialsDTO(
@@ -60,9 +60,8 @@ class TestPointRoutes {
           plainPassword = "hehehe"
         )
       )
-    }
+    }.body<String>()
 
-    val generatedJwt = loginResponse.body<String>()
     val createPointResponse = c.post("/point") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")

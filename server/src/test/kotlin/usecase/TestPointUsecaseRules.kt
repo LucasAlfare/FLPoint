@@ -61,7 +61,7 @@ class TestPointUsecaseRules {
 
       assertEquals(
         expected = it,
-        actual = PointUsecasesRules.passedAtLeast30MinutesFromLast(last, check)
+        actual = PointUsecasesRules.isAtLeast30MinFromLast(last, check)
       )
     }
   }
