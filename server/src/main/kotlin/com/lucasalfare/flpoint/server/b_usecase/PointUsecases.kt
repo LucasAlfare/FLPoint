@@ -34,7 +34,7 @@ class PointUsecases(
         if (userPoints.isNotEmpty()) {
           if (
             !PointUsecasesRules.isWithinValidTimeRange(createPointRequestDTO.timestamp) ||
-            !PointUsecasesRules.isAtLeast30MinFromLast(userPoints.last().timestamp, createPointRequestDTO.timestamp)
+            !PointUsecasesRules.passedAtLeast30MinFromLast(userPoints.last().timestamp, createPointRequestDTO.timestamp)
           ) {
             throw UsecaseRuleError()
           }

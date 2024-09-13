@@ -12,7 +12,7 @@ object PointUsecasesRules {
 //    if (!isWithinValidTimeRange(check)) return false
 //    if (!isAtLeast30MinFromLast(last, check)) return false
 //    return true
-    return isWithinValidTimeRange(check) && isAtLeast30MinFromLast(last, check)
+    return isWithinValidTimeRange(check) && passedAtLeast30MinFromLast(last, check)
   }
 
   fun isWithinValidTimeRange(check: Instant): Boolean {
@@ -24,7 +24,7 @@ object PointUsecasesRules {
     return check in lowerBound..higherBound
   }
 
-  fun isAtLeast30MinFromLast(last: Instant, check: Instant): Boolean {
+  fun passedAtLeast30MinFromLast(last: Instant, check: Instant): Boolean {
     // interval between last and check must be, at least, 30 minutes
     return check - last >= 30.minutes
   }
