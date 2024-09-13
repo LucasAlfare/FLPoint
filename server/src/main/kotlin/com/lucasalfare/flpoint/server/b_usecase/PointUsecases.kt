@@ -1,9 +1,9 @@
 package com.lucasalfare.flpoint.server.b_usecase
 
 import com.lucasalfare.flpoint.server.a_domain.PointsHandler
+import com.lucasalfare.flpoint.server.a_domain.model.Point
 import com.lucasalfare.flpoint.server.a_domain.model.UsecaseRuleError
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
-import com.lucasalfare.flpoint.server.a_domain.model.dto.GetAllPointsResponseDTO
 import com.lucasalfare.flpoint.server.b_usecase.rule.PointUsecasesRules
 
 class PointUsecases(
@@ -31,9 +31,12 @@ class PointUsecases(
       val userPoints = result.getOrNull()
       if (userPoints != null) {
         if (userPoints.isNotEmpty()) {
-          // TODO: logic!
           if (
-            !PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = createPointRequestDTO.timestamp)
+            !PointUsecasesRules
+              .allRulesTrue(
+                last = userPoints.last().timestamp,
+                check = createPointRequestDTO.timestamp
+              )
           ) {
             throw UsecaseRuleError()
           }
@@ -46,12 +49,20 @@ class PointUsecases(
     throw UsecaseRuleError()
   }
 
-  suspend fun getAllUserPoints(relatedUserId: Int): GetAllPointsResponseDTO {
+  suspend fun getAllUserPoints(relatedUserId: Int): List<Point> {
     val search = pointsHandler.get(relatedUserId)
     if (search.isSuccess) {
-      return GetAllPointsResponseDTO(timestamps = search.getOrNull()!!.map { it.timestamp })
+      return search.getOrElse { emptyList() }
     }
 
-    return GetAllPointsResponseDTO(emptyList())
+    return emptyList()
+  }
+
+  suspend fun getAllPointsOfAllUsers(): Result<List<Point>> {
+    return pointsHandler.get()
+  }
+
+  suspend fun deletePoint(id: Int): Boolean {
+    return pointsHandler.delete(id)
   }
 }

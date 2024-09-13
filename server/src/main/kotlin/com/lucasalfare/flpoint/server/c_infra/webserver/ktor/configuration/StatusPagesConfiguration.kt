@@ -1,10 +1,7 @@
 package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration
 
 import com.lucasalfare.flpoint.server.a_domain.customRootCause
-import com.lucasalfare.flpoint.server.a_domain.model.DatabaseError
-import com.lucasalfare.flpoint.server.a_domain.model.LoginError
-import com.lucasalfare.flpoint.server.a_domain.model.UsecaseRuleError
-import com.lucasalfare.flpoint.server.a_domain.model.ValidationError
+import com.lucasalfare.flpoint.server.a_domain.model.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.statuspages.*
@@ -17,6 +14,7 @@ fun Application.statusPagesConfiguration() {
         is ValidationError -> call.respond(HttpStatusCode.NotAcceptable, root.message ?: "ValidationError")
         is DatabaseError -> call.respond(HttpStatusCode.UnprocessableEntity, root.message ?: "DatabaseError")
         is LoginError -> call.respond(HttpStatusCode.Unauthorized, root.message ?: "LoginError")
+        is NoPrivilegeError -> call.respond(HttpStatusCode.Unauthorized, root.message ?: "NoPrivilegeError")
         is UsecaseRuleError -> call.respond(HttpStatusCode.UnprocessableEntity, root.message ?: "UsecaseRuleError")
         else -> {
           cause.printStackTrace()
