@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes
+package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.dummy
 
 import io.ktor.http.*
 import io.ktor.server.application.*

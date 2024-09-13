@@ -13,7 +13,7 @@ object ExposedInitializer {
       password = "",
       maximumPoolSize = Constants.DEFAULT_MAXIMUM_POOL_SIZE,
     ) {
-      SchemaUtils.createMissingTablesAndColumns(Users, TimeEntries)
+      SchemaUtils.createMissingTablesAndColumns(Users, Points)
     }
   }
 }

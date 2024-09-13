@@ -11,7 +11,7 @@ object Users : IntIdTable("Users") {
   val role = enumeration<UserRole>("role")
 }
 
-object TimeEntries : IntIdTable("TimeEntries") {
+object Points : IntIdTable("Points") {
   val relatedUser = integer("related_user").references(Users.id)
   val timestamp = datetime("timestamp")
 }

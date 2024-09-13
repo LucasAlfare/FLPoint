@@ -1,11 +1,9 @@
-package com.lucasalfare.flpoint.server.a_domain.model
+package com.lucasalfare.flpoint.server.a_domain.model.dto
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Point(
-  val id: Int,
-  val relatedUserId: Int,
+data class CreatePointRequestDTO(
   val timestamp: Instant
 )
