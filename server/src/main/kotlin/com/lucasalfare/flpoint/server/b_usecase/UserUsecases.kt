@@ -14,7 +14,7 @@ class UserUsecases(
   var passwordHasher: PasswordHasher
 ) {
 
-  suspend fun createUser(createUserDTO: CreateUserDTO) = usersHandler.create(
+  suspend fun createUser(createUserDTO: CreateUserDTO): Result<Int> = usersHandler.create(
     createUserDTO.name,
     createUserDTO.email,
     passwordHasher.hashed(plain = createUserDTO.plainPassword),

@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server.a_domain.model.dto
 
+import com.lucasalfare.flpoint.server.a_domain.Constants
 import com.lucasalfare.flpoint.server.a_domain.model.ValidationError
 import kotlinx.serialization.Serializable
 
@@ -12,6 +13,7 @@ data class BasicCredentialsDTO(
   init {
     if (
       email.isEmpty() ||
+      !email.matches(Constants.EMAIL_ADDRESS_PATTERN.toRegex()) ||
       plainPassword.isEmpty() ||
       plainPassword.length < 4
     ) {

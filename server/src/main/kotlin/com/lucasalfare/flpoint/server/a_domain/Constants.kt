@@ -34,5 +34,7 @@ class Constants {
      * This port is used if none is manually defined.
      */
     const val DEFAULT_WEB_SERVER_PORT = 80
+
+    const val EMAIL_ADDRESS_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\$"
   }
 }
