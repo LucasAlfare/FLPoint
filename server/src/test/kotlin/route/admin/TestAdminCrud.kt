@@ -100,7 +100,7 @@ class TestAdminCrud {
     }.body<String>()
 
     // performs request to role-protected route
-    val adminGetPointsResponse = c.get("/route/admin/points") {
+    val adminGetPointsResponse = c.get("/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }
@@ -176,7 +176,7 @@ class TestAdminCrud {
     }.body<String>()
 
     // performs request to role-protected route
-    var adminGetPointsResponse = c.get("/route/admin/points") {
+    var adminGetPointsResponse = c.get("/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }
@@ -199,7 +199,7 @@ class TestAdminCrud {
     )
 
     // get all again...
-    adminGetPointsResponse = c.get("/route/admin/points") {
+    adminGetPointsResponse = c.get("/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }

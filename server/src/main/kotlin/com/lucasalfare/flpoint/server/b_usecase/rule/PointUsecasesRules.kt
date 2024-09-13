@@ -3,6 +3,7 @@ package com.lucasalfare.flpoint.server.b_usecase.rule
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 object PointUsecasesRules {
 
@@ -15,11 +16,12 @@ object PointUsecasesRules {
   }
 
   fun isWithinValidTimeRange(check: Instant): Boolean {
-    val nowMs: Long = Clock.System.now().toEpochMilliseconds()
-    val checkMs = check.toEpochMilliseconds()
+    val now = Clock.System.now()
 
-    // Check if the time is no more than 1 second in the future and no more than 10 seconds in the past
-    return checkMs <= nowMs + 1000L && checkMs >= nowMs - 10_000L
+    val lowerBound = now - 10.seconds
+    val higherBound = now + 1.seconds
+
+    return check in lowerBound..higherBound
   }
 
   fun isAtLeast30MinFromLast(last: Instant, check: Instant): Boolean {
