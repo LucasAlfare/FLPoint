@@ -5,6 +5,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreatePointRequestDTO(
-//  val userId: Int,
   val timestamp: Instant
 )

@@ -179,7 +179,7 @@ class TestUserRoutes {
     }
 
     val generatedJwt = loginResponse.body<String>()
-    val protectedAcessResponse = c.get("/protected") {
+    val protectedAccessResponse = c.get("/protected") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")
       }
@@ -187,7 +187,7 @@ class TestUserRoutes {
 
     assertEquals(
       expected = HttpStatusCode.OK,
-      actual = protectedAcessResponse.status
+      actual = protectedAccessResponse.status
     )
   }
 

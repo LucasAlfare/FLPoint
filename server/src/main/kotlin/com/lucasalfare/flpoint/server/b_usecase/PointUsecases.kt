@@ -3,7 +3,7 @@ package com.lucasalfare.flpoint.server.b_usecase
 import com.lucasalfare.flpoint.server.a_domain.PointsHandler
 import com.lucasalfare.flpoint.server.a_domain.model.UsecaseRuleError
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
-import com.lucasalfare.flpoint.server.a_domain.model.dto.PointsDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.GetAllPointsResponseDTO
 import com.lucasalfare.flpoint.server.b_usecase.rule.PointUsecasesRules
 
 class PointUsecases(
@@ -46,12 +46,12 @@ class PointUsecases(
     throw UsecaseRuleError()
   }
 
-  suspend fun getAllUserPoints(relatedUserId: Int): PointsDTO {
+  suspend fun getAllUserPoints(relatedUserId: Int): GetAllPointsResponseDTO {
     val search = pointsHandler.get(relatedUserId)
     if (search.isSuccess) {
-      return PointsDTO(timestamps = search.getOrNull()!!.map { it.timestamp })
+      return GetAllPointsResponseDTO(timestamps = search.getOrNull()!!.map { it.timestamp })
     }
 
-    return PointsDTO(emptyList())
+    return GetAllPointsResponseDTO(emptyList())
   }
 }

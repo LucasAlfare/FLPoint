@@ -2,7 +2,7 @@ import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
-import com.lucasalfare.flpoint.server.a_domain.model.dto.PointsDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.GetAllPointsResponseDTO
 import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryPointsHandler
@@ -180,7 +180,7 @@ class TestPointRoutes {
 
     assertEquals(expected = HttpStatusCode.OK, getPointsResponse.status)
 
-    val points = getPointsResponse.body<PointsDTO>()
+    val points = getPointsResponse.body<GetAllPointsResponseDTO>()
     assertTrue(points.timestamps.size == 1)
   }
 

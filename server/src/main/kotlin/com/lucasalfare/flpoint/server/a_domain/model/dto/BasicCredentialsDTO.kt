@@ -13,7 +13,7 @@ data class BasicCredentialsDTO(
     if (
       email.isEmpty() ||
       plainPassword.isEmpty() ||
-      plainPassword.length < 4 // TODO: "4" is a rule
+      plainPassword.length < 4
     ) {
       throw ValidationError()
     }

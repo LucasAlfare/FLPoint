@@ -4,6 +4,6 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PointsDTO(
+data class GetAllPointsResponseDTO(
   val timestamps: List<Instant>
 )
