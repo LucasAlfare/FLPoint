@@ -1,3 +1,5 @@
+package route
+
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
@@ -249,7 +251,7 @@ class TestUserRoutes {
 
     val generatedJwt = loginResponse.body<String>()
 
-    val protectedAcessResponse = c.get("/protected-for-admin") {
+    val protectedAccessResponse = c.get("/protected-for-admin") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")
       }
@@ -257,7 +259,7 @@ class TestUserRoutes {
 
     assertEquals(
       expected = HttpStatusCode.OK,
-      actual = protectedAcessResponse.status
+      actual = protectedAccessResponse.status
     )
   }
 

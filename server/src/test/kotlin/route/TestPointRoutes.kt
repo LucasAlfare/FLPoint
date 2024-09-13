@@ -1,3 +1,5 @@
+package route
+
 import com.lucasalfare.flpoint.server.a_domain.model.Point
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
@@ -16,7 +18,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
@@ -68,12 +69,8 @@ class TestPointRoutes {
       headers {
         append(HttpHeaders.Authorization, "Bearer $generatedJwt")
       }
-
       contentType(ContentType.Application.Json)
-
-//      Instant.fromEpochMilliseconds(System.currentTimeMillis() - (10 * 60 * 1000)).toLocalDateTime(TimeZone.currentSystemDefault())
       val now = Clock.System.now()
-
       setBody(CreatePointRequestDTO(timestamp = now))
     }
 
@@ -87,7 +84,7 @@ class TestPointRoutes {
   fun `test create point failure route`() = testApplication {
     val c = setupTestClient()
 
-    val resisterResponse = c.post("/register") {
+    c.post("/register") {
       contentType(ContentType.Application.Json)
       setBody(
         CreateUserDTO(
@@ -98,7 +95,6 @@ class TestPointRoutes {
         )
       )
     }
-    println("resisterResponse=${resisterResponse.bodyAsText()}")
 
     val loginResponse = c.post("/login") {
       contentType(ContentType.Application.Json)
@@ -109,7 +105,6 @@ class TestPointRoutes {
         )
       )
     }
-    println("loginResponse=${loginResponse.bodyAsText()}")
 
     val generatedJwt = loginResponse.body<String>()
 

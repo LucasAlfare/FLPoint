@@ -1,4 +1,4 @@
-package admin
+package route.admin
 
 import com.lucasalfare.flpoint.server.a_domain.model.Point
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
@@ -56,6 +56,7 @@ class TestAdminCrud {
           )
         )
       }
+
       val generatedJwt = c.post("/login") {
         contentType(ContentType.Application.Json)
         setBody(
@@ -87,6 +88,7 @@ class TestAdminCrud {
         )
       )
     }
+
     val adminJwt = c.post("/login") {
       contentType(ContentType.Application.Json)
       setBody(
@@ -98,7 +100,7 @@ class TestAdminCrud {
     }.body<String>()
 
     // performs request to role-protected route
-    val adminGetPointsResponse = c.get("/admin/points") {
+    val adminGetPointsResponse = c.get("/route/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }
@@ -130,6 +132,7 @@ class TestAdminCrud {
           )
         )
       }
+
       val generatedJwt = c.post("/login") {
         contentType(ContentType.Application.Json)
         setBody(
@@ -161,6 +164,7 @@ class TestAdminCrud {
         )
       )
     }
+
     val adminJwt = c.post("/login") {
       contentType(ContentType.Application.Json)
       setBody(
@@ -172,7 +176,7 @@ class TestAdminCrud {
     }.body<String>()
 
     // performs request to role-protected route
-    var adminGetPointsResponse = c.get("/admin/points") {
+    var adminGetPointsResponse = c.get("/route/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }
@@ -195,7 +199,7 @@ class TestAdminCrud {
     )
 
     // get all again...
-    adminGetPointsResponse = c.get("/admin/points") {
+    adminGetPointsResponse = c.get("/route/admin/points") {
       headers {
         append(HttpHeaders.Authorization, "Bearer $adminJwt")
       }

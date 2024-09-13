@@ -10,6 +10,7 @@ class PointUsecases(
   var pointsHandler: PointsHandler
 ) {
 
+  // TODO: fiz rules validation!!! Buggy!!!
   suspend fun createTimeRegistration(
     relatedUserId: Int,
     createPointRequestDTO: CreatePointRequestDTO
