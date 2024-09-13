@@ -1,7 +1,8 @@
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
-import com.lucasalfare.flpoint.server.a_domain.model.dto.PointRequestDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.PointsDTO
 import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryPointsHandler
@@ -25,6 +26,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class TestPointRoutes {
 
@@ -72,7 +74,7 @@ class TestPointRoutes {
 //      Instant.fromEpochMilliseconds(System.currentTimeMillis() - (10 * 60 * 1000)).toLocalDateTime(TimeZone.currentSystemDefault())
       val now = Clock.System.now()
 
-      setBody(PointRequestDTO(timestamp = now))
+      setBody(CreatePointRequestDTO(timestamp = now))
     }
 
     assertEquals(
@@ -117,7 +119,7 @@ class TestPointRoutes {
       }
       contentType(ContentType.Application.Json)
       val now = Clock.System.now()
-      setBody(PointRequestDTO(timestamp = now))
+      setBody(CreatePointRequestDTO(timestamp = now))
     }
 
     val createPointResponse = c.post("/point") {
@@ -126,13 +128,60 @@ class TestPointRoutes {
       }
       contentType(ContentType.Application.Json)
       val now = Clock.System.now()
-      setBody(PointRequestDTO(timestamp = now))
+      setBody(CreatePointRequestDTO(timestamp = now))
     }
 
     assertEquals(
       expected = HttpStatusCode.UnprocessableEntity,
       actual = createPointResponse.status
     )
+  }
+
+  @Test
+  fun `test get all user points success route`() = testApplication {
+    val c = setupTestClient()
+
+    c.post("/register") {
+      contentType(ContentType.Application.Json)
+      setBody(
+        CreateUserDTO(
+          name = "Lucas",
+          email = "asdf@abc.com",
+          plainPassword = "hehehe",
+          targetRole = UserRole.Admin
+        )
+      )
+    }
+
+    val generatedJwt = c.post("/login") {
+      contentType(ContentType.Application.Json)
+      setBody(
+        BasicCredentialsDTO(
+          email = "asdf@abc.com",
+          plainPassword = "hehehe"
+        )
+      )
+    }.body<String>()
+
+    c.post("/point") {
+      headers {
+        append(HttpHeaders.Authorization, "Bearer $generatedJwt")
+      }
+      contentType(ContentType.Application.Json)
+      val now = Clock.System.now()
+      setBody(CreatePointRequestDTO(timestamp = now))
+    }
+
+    val getPointsResponse = c.get("/points") {
+      headers {
+        append(HttpHeaders.Authorization, "Bearer $generatedJwt")
+      }
+    }
+
+    assertEquals(expected = HttpStatusCode.OK, getPointsResponse.status)
+
+    val points = getPointsResponse.body<PointsDTO>()
+    assertTrue(points.timestamps.size == 1)
   }
 
   private fun ApplicationTestBuilder.setupTestClient(): HttpClient {

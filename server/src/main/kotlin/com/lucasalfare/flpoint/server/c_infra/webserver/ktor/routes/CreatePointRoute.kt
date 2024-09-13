@@ -1,6 +1,6 @@
 package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes
 
-import com.lucasalfare.flpoint.server.a_domain.model.dto.PointRequestDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
 import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -15,7 +15,7 @@ fun Routing.pointRoute(pointUsecases: PointUsecases) {
     post("/point") {
       val principal = call.principal<JWTPrincipal>()
       val userId = principal?.payload?.getClaim("id")?.asInt() ?: -1
-      val req = call.receive<PointRequestDTO>()
+      val req = call.receive<CreatePointRequestDTO>()
       val result = pointUsecases.createTimeRegistration(userId, req)
       return@post call.respond(HttpStatusCode.Created, result.getOrNull()!!)
     }

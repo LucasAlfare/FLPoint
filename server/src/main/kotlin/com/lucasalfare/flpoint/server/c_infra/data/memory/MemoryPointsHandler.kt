@@ -18,7 +18,7 @@ object MemoryPointsHandler : PointsHandler {
     Result.success(
       points
         .filter { it.relatedUserId == relatedUser }
-        .sortedBy { it.timestamp }
+        .sortedBy { it.timestamp.toEpochMilliseconds() }
     )
 
   override suspend fun clear(): Result<Boolean> {

@@ -16,5 +16,6 @@ fun Application.routingConfiguration(
     registerPostRoute(userUsecases)
     loginPostRoute(userUsecases)
     pointRoute(pointUsecases)
+    listPointsRoute(pointUsecases)
   }
 }

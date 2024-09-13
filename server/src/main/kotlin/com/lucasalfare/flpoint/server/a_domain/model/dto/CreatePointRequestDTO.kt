@@ -4,7 +4,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PointRequestDTO(
+data class CreatePointRequestDTO(
 //  val userId: Int,
   val timestamp: Instant
 )

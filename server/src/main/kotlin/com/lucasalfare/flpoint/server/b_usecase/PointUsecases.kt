@@ -2,7 +2,8 @@ package com.lucasalfare.flpoint.server.b_usecase
 
 import com.lucasalfare.flpoint.server.a_domain.PointsHandler
 import com.lucasalfare.flpoint.server.a_domain.model.UsecaseRuleError
-import com.lucasalfare.flpoint.server.a_domain.model.dto.PointRequestDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.CreatePointRequestDTO
+import com.lucasalfare.flpoint.server.a_domain.model.dto.PointsDTO
 import com.lucasalfare.flpoint.server.b_usecase.rule.PointUsecasesRules
 
 class PointUsecases(
@@ -11,7 +12,7 @@ class PointUsecases(
 
   suspend fun createTimeRegistration(
     relatedUserId: Int,
-    pointRequestDTO: PointRequestDTO
+    createPointRequestDTO: CreatePointRequestDTO
   ): Result<Int> {
     /*
     - we assume that request body fields is pre-validated;
@@ -32,16 +33,25 @@ class PointUsecases(
         if (userPoints.isNotEmpty()) {
           // TODO: logic!
           if (
-            !PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = pointRequestDTO.timestamp)
+            !PointUsecasesRules.allPasses(last = userPoints.last().timestamp, check = createPointRequestDTO.timestamp)
           ) {
             throw UsecaseRuleError()
           }
         }
 
-        return pointsHandler.create(relatedUserId, pointRequestDTO.timestamp)
+        return pointsHandler.create(relatedUserId, createPointRequestDTO.timestamp)
       }
     }
 
     throw UsecaseRuleError()
+  }
+
+  suspend fun getAllUserPoints(relatedUserId: Int): PointsDTO {
+    val search = pointsHandler.get(relatedUserId)
+    if (search.isSuccess) {
+      return PointsDTO(timestamps = search.getOrNull()!!.map { it.timestamp })
+    }
+
+    return PointsDTO(emptyList())
   }
 }
