@@ -10,6 +10,20 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
+/**
+ * Configures routes for handling points that require authentication.
+ *
+ * This function sets up routes related to point operations that require user authentication.
+ * It includes:
+ * - A POST route at `/point` for creating a point registration. The route extracts the user ID
+ *   from the JWT principal, receives a `CreatePointRequestDTO`, and uses `pointUsecases.createTimeRegistration`
+ *   to create the point registration. It responds with HTTP 201 Created and the result of the operation.
+ * - A GET route at `/points` for retrieving all points for the authenticated user. The route extracts
+ *   the user ID from the JWT principal, calls `pointUsecases.getAllUserPoints`, and responds with HTTP 200 OK
+ *   and the list of points.
+ *
+ * @param pointUsecases The use cases related to point operations, such as creating and retrieving points.
+ */
 fun Routing.pointsHandlingRoutes(pointUsecases: PointUsecases) {
   authenticate("flpoint-jwt-auth") {
     post("/point") {

@@ -7,6 +7,18 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 
+/**
+ * Configures status pages for the application to handle exceptions.
+ *
+ * This function installs the StatusPages feature to manage different types of exceptions
+ * and return appropriate HTTP responses. It handles the following exceptions:
+ * - `ValidationError`: Responds with HTTP 406 Not Acceptable.
+ * - `DatabaseError`: Responds with HTTP 422 Unprocessable Entity.
+ * - `LoginError`: Responds with HTTP 401 Unauthorized.
+ * - `NoPrivilegeError`: Responds with HTTP 401 Unauthorized.
+ * - `UsecaseRuleError`: Responds with HTTP 422 Unprocessable Entity.
+ * For any other exceptions, it logs the stack trace and responds with HTTP 500 Internal Server Error.
+ */
 fun Application.statusPagesConfiguration() {
   install(StatusPages) {
     exception<Throwable> { call, cause ->

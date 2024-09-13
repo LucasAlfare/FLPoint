@@ -9,10 +9,28 @@ import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.statu
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
+/**
+ * Launches the Ktor server with specified configurations and use cases.
+ *
+ * This class sets up and starts an embedded Ktor server using the Netty engine.
+ * It configures the server with serialization, status pages, authentication, and routing settings.
+ *
+ * @property userUsecases The use cases related to user operations, which will be used in routing configuration.
+ * @property pointUsecases The use cases related to point operations, which will be used in routing configuration.
+ */
 class KtorLauncher(
   val userUsecases: UserUsecases,
   val pointUsecases: PointUsecases
 ) {
+  /**
+   * Starts the Ktor server with the configured settings.
+   *
+   * This function initializes the Ktor server on port 7171 and applies the following configurations:
+   * - Serialization configuration for JSON processing.
+   * - Status pages configuration for handling exceptions.
+   * - Authentication configuration for securing routes.
+   * - Routing configuration to set up application routes with provided use cases.
+   */
   fun launch() {
     embeddedServer(Netty, port = 7171) {
       serializationConfiguration()

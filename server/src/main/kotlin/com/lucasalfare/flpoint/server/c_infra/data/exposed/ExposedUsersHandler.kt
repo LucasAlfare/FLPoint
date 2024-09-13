@@ -7,9 +7,27 @@ import com.lucasalfare.flpoint.server.a_domain.model.UserRole
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
+/**
+ * Implementation of [UsersHandler] using Exposed framework for database operations.
+ *
+ * The `ExposedUsersHandler` object provides concrete implementations for user management operations
+ * including creating, retrieving, updating, removing, and clearing users from the database.
+ */
 object ExposedUsersHandler : UsersHandler {
 
-  // Cria um novo usuário e retorna o ID gerado
+  /**
+   * Creates a new user and returns the generated user ID.
+   *
+   * This method inserts a new user record into the database with the specified name, email, hashed password,
+   * and role. On success, it returns the ID of the newly created user.
+   *
+   * @param name The name of the user.
+   * @param email The email of the user.
+   * @param hashedPassword The hashed password of the user.
+   * @param role The role of the user.
+   * @return A [Result] containing the ID of the newly created user if successful, or a [DatabaseError] otherwise.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun create(name: String, email: String, hashedPassword: String, role: UserRole): Result<Int> =
     AppDB.exposedQuery {
       try {
@@ -21,11 +39,19 @@ object ExposedUsersHandler : UsersHandler {
         }.value
         Result.success(userId)
       } catch (e: Exception) {
-        throw DatabaseError()
+        Result.failure(DatabaseError()) // Changed to Result.failure
       }
     }
 
-  // Retorna um usuário por ID
+  /**
+   * Retrieves a user by ID.
+   *
+   * This method fetches the user record with the specified ID from the database.
+   *
+   * @param id The ID of the user to retrieve.
+   * @return A [Result] containing the user if found, or a [DatabaseError] if the user is not found or an error occurs.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun get(id: Int): Result<User> = AppDB.exposedQuery {
     try {
       val user = Users.selectAll().where { Users.id eq id }.singleOrNull()?.let {
@@ -37,14 +63,21 @@ object ExposedUsersHandler : UsersHandler {
           role = it[Users.role]
         )
       }
-//      user?.let { Result.success(it) } ?: Result.failure(DatabaseException("User not found"))
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 
-  // Retorna um usuário por email
+  /**
+   * Retrieves a user by email.
+   *
+   * This method fetches the user record with the specified email from the database.
+   *
+   * @param email The email of the user to retrieve.
+   * @return A [Result] containing the user if found, or a [DatabaseError] if the user is not found or an error occurs.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun get(email: String): Result<User> = AppDB.exposedQuery {
     try {
       val user = Users.selectAll().where { Users.email eq email }.singleOrNull()?.let {
@@ -56,14 +89,20 @@ object ExposedUsersHandler : UsersHandler {
           role = it[Users.role]
         )
       }
-//      user?.let { Result.success(it) } ?: Result.failure(DatabaseException("User not found"))
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 
-  // Retorna todos os usuários
+  /**
+   * Retrieves all users.
+   *
+   * This method fetches all user records from the database.
+   *
+   * @return A [Result] containing a list of all users if successful, or a [DatabaseError] if an error occurs.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun getAll(): Result<List<User>> = AppDB.exposedQuery {
     try {
       val users = Users.selectAll().map {
@@ -77,11 +116,24 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(users)
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 
-  // Atualiza um usuário
+  /**
+   * Updates a user with the specified ID.
+   *
+   * This method updates the user record with the specified ID, applying any provided changes to name, email,
+   * hashed password, and role.
+   *
+   * @param id The ID of the user to update.
+   * @param name Optional new name for the user.
+   * @param email Optional new email for the user.
+   * @param hashedPassword Optional new hashed password for the user.
+   * @param role Optional new role for the user.
+   * @return A [Result] containing `true` if the update was successful, or `false` otherwise.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun update(
     id: Int,
     name: String?,
@@ -98,27 +150,42 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(updatedRows > 0)
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 
-  // Remove um usuário por ID
+  /**
+   * Removes a user by ID.
+   *
+   * This method deletes the user record with the specified ID from the database.
+   *
+   * @param id The ID of the user to remove.
+   * @return A [Result] containing `true` if the removal was successful, or `false` otherwise.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun remove(id: Int): Result<Boolean> = AppDB.exposedQuery {
     try {
       val deletedRows = Users.deleteWhere { Users.id eq id }
       Result.success(deletedRows > 0)
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 
-  // Limpa todos os usuários
+  /**
+   * Clears all users from the database.
+   *
+   * This method deletes all user records from the database.
+   *
+   * @return A [Result] containing `true` if the operation was successful, or `false` otherwise.
+   * @throws DatabaseError If an error occurs during database operations.
+   */
   override suspend fun clear(): Result<Boolean> = AppDB.exposedQuery {
     try {
       Users.deleteAll()
       Result.success(true)
     } catch (e: Exception) {
-      throw DatabaseError()
+      Result.failure(DatabaseError()) // Changed to Result.failure
     }
   }
 }

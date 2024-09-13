@@ -9,7 +9,18 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-// routes that doesn't requires authentication to access
+/**
+ * Configures user access routes that do not require authentication.
+ *
+ * This function sets up routes related to user operations that are accessible without
+ * authentication. It includes:
+ * - A POST route at `/login` for user login, where it receives `BasicCredentialsDTO`,
+ *   performs the login via `userUsecases.loginUser(dto)`, and responds with the generated JWT.
+ * - A POST route at `/register` for user registration, where it receives `CreateUserDTO`,
+ *   creates a user via `userUsecases.createUser(dto)`, and responds with the created user data.
+ *
+ * @param userUsecases The use cases related to user operations, such as login and registration.
+ */
 fun Routing.userAccessRoutes(userUsecases: UserUsecases) {
   post("/login") {
     val dto = call.receive<BasicCredentialsDTO>()
