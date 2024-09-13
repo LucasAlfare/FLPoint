@@ -1,4 +1,4 @@
-package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes
+package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.dummy
 
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.handleAsAuthenticatedAdmin
 import io.ktor.http.*

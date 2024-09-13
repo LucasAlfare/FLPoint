@@ -9,8 +9,9 @@ import io.ktor.util.pipeline.*
 
 // Acts like a plugin to the route methods context.
 // Checks if a good JWT contains an "Admin" role claim, then authorizes.
+// This injects a extension to the pipeline context.
 suspend fun PipelineContext<Unit, ApplicationCall>.handleAsAuthenticatedAdmin(
-  onSuccessAdminVerification: suspend () -> Unit = {}
+  onSucceedAdminVerification: suspend () -> Unit = {}
 ) {
   val principal = call.principal<JWTPrincipal>()
 
@@ -19,7 +20,7 @@ suspend fun PipelineContext<Unit, ApplicationCall>.handleAsAuthenticatedAdmin(
   )
 
   if (role == UserRole.Admin) {
-    onSuccessAdminVerification()
+    onSucceedAdminVerification()
   } else {
     throw NoPrivilegeError()
   }
