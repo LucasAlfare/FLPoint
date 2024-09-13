@@ -5,7 +5,7 @@ import com.lucasalfare.flpoint.server.a_domain.model.dto.BasicCredentialsDTO
 import com.lucasalfare.flpoint.server.a_domain.model.dto.CreateUserDTO
 import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
-import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryPointsHandler
+import com.lucasalfare.flpoint.server.c_infra.data.exposed.ExposedPointsHandler
 import com.lucasalfare.flpoint.server.c_infra.data.memory.MemoryUsersHandler
 import com.lucasalfare.flpoint.server.c_infra.security.hashing.dummy.DummyPasswordHasher
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.authenticationConfiguration
@@ -21,6 +21,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,8 +30,16 @@ class TestUserRoutes {
 
   @BeforeTest
   fun setup() {
+//    runBlocking {
+//      ExposedInitializer.initialize()
+//    }
+  }
+
+  @AfterTest
+  fun dispose() {
     runBlocking {
       MemoryUsersHandler.clear()
+//      transaction { SchemaUtils.drop(Users, Points) }
     }
   }
 
@@ -60,6 +69,7 @@ class TestUserRoutes {
   fun `test register route failure`() = testApplication {
     val c = setupTestClient()
 
+    // register one...
     c.post("/register") {
       contentType(ContentType.Application.Json)
       setBody(
@@ -72,6 +82,7 @@ class TestUserRoutes {
       )
     }
 
+    // try to register again the same
     val postResponse = c.post("/register") {
       contentType(ContentType.Application.Json)
       setBody(
@@ -310,11 +321,13 @@ private fun ApplicationTestBuilder.setupTestClient(): HttpClient {
     statusPagesConfiguration()
     routingConfiguration(
       userUsecases = UserUsecases(
+//        usersHandler = ExposedUsersHandler,
+//        passwordHasher = JBCryptPasswordHasher
         usersHandler = MemoryUsersHandler,
         passwordHasher = DummyPasswordHasher
       ),
       pointUsecases = PointUsecases(
-        MemoryPointsHandler
+        ExposedPointsHandler
       )
     )
   }

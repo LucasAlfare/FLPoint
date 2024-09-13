@@ -21,8 +21,7 @@ object ExposedUsersHandler : UsersHandler {
         }.value
         Result.success(userId)
       } catch (e: Exception) {
-//        Result.failure(DatabaseException("Failed to create user: ${e.message}", e))
-        Result.failure(DatabaseError())
+        throw DatabaseError()
       }
     }
 
@@ -41,8 +40,7 @@ object ExposedUsersHandler : UsersHandler {
 //      user?.let { Result.success(it) } ?: Result.failure(DatabaseException("User not found"))
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to get user: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -61,8 +59,7 @@ object ExposedUsersHandler : UsersHandler {
 //      user?.let { Result.success(it) } ?: Result.failure(DatabaseException("User not found"))
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to get user: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -80,8 +77,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(users)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to retrieve users: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -102,8 +98,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(updatedRows > 0)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to update user: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -113,8 +108,7 @@ object ExposedUsersHandler : UsersHandler {
       val deletedRows = Users.deleteWhere { Users.id eq id }
       Result.success(deletedRows > 0)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to remove user: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -124,8 +118,7 @@ object ExposedUsersHandler : UsersHandler {
       Users.deleteAll()
       Result.success(true)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to clear users: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 }

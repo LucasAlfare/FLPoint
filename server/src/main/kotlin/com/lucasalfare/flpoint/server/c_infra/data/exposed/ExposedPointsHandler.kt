@@ -24,8 +24,7 @@ object ExposedPointsHandler : PointsHandler {
       }.value
       Result.success(pointId)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to create point: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -41,8 +40,7 @@ object ExposedPointsHandler : PointsHandler {
       }
       Result.success(points)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to retrieve points: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -58,8 +56,7 @@ object ExposedPointsHandler : PointsHandler {
       }
       Result.success(points)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to retrieve points for user: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 
@@ -79,8 +76,7 @@ object ExposedPointsHandler : PointsHandler {
       Points.deleteAll()
       Result.success(true)
     } catch (e: Exception) {
-//      Result.failure(DatabaseException("Failed to clear points: ${e.message}", e))
-      Result.failure(DatabaseError())
+      throw DatabaseError()
     }
   }
 }
