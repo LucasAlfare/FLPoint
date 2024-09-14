@@ -51,11 +51,11 @@ class UserUsecases(
    */
   suspend fun loginUser(basicCredentialsDTO: BasicCredentialsDTO): String {
     val result = usersHandler.get(basicCredentialsDTO.email)
-    if (result.isFailure) throw LoginError()
+//    if (result.isFailure) throw LoginError("")
 
-    val user = result.getOrNull()!!
+    val user = result.getOrNull() ?: throw LoginError("User not found for the given email")
     val passwordMatches = passwordHasher.plainMatchesHashed(basicCredentialsDTO.plainPassword, user.hashedPassword)
-    if (!passwordMatches) throw LoginError()
+    if (!passwordMatches) throw LoginError("Invalid password")
 
     return KtorJwtGenerator.generate(
       id = user.id,

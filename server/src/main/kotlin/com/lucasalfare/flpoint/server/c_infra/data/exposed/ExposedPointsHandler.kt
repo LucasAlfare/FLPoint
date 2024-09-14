@@ -40,7 +40,7 @@ object ExposedPointsHandler : PointsHandler {
       }.value
       Result.success(pointId)
     } catch (e: Exception) {
-      throw DatabaseError()
+      throw DatabaseError("Error when inserting point info in the database.")
     }
   }
 
@@ -63,7 +63,7 @@ object ExposedPointsHandler : PointsHandler {
       }
       Result.success(points)
     } catch (e: Exception) {
-      throw DatabaseError()
+      throw DatabaseError("Error when getting all points info from the database.")
     }
   }
 
@@ -87,7 +87,7 @@ object ExposedPointsHandler : PointsHandler {
       }
       Result.success(points)
     } catch (e: Exception) {
-      throw DatabaseError()
+      throw DatabaseError("Error when getting point info of user ID from the database.")
     }
   }
 
@@ -122,7 +122,7 @@ object ExposedPointsHandler : PointsHandler {
       Points.deleteAll()
       Result.success(true)
     } catch (e: Exception) {
-      throw DatabaseError()
+      throw DatabaseError("Error when trying to clear all points of the database.")
     }
   }
 }

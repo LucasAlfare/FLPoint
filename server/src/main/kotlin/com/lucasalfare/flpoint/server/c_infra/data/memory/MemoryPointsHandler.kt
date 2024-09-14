@@ -28,7 +28,7 @@ object MemoryPointsHandler : PointsHandler {
 
   override suspend fun delete(id: Int): Boolean {
     if (points.removeIf { it.id == id }) return true
-    throw DatabaseError()
+    throw DatabaseError("Error when trying remove point of user by ID from the database.")
   }
 
   override suspend fun clear(): Result<Boolean> {

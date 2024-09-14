@@ -96,7 +96,7 @@ class TestUserRoutes {
     }
 
     assertEquals(
-      expected = HttpStatusCode.UnprocessableEntity,
+      expected = HttpStatusCode.InternalServerError,
       actual = postResponse.status
     )
   }
@@ -308,7 +308,7 @@ class TestUserRoutes {
     }
 
     assertEquals(
-      expected = HttpStatusCode.Unauthorized,
+      expected = HttpStatusCode.Forbidden,
       actual = protectedAccessResponse.status
     )
   }

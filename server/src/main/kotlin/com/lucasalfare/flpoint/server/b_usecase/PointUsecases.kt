@@ -42,23 +42,19 @@ class PointUsecases(
   ): Result<Int> {
     val result = pointsHandler.get(relatedUserId)
 
-    if (result.isSuccess) {
-      val userPoints = result.getOrNull()
-      if (userPoints != null) {
-        if (userPoints.isNotEmpty()) {
-          if (
-            !PointUsecasesRules.isWithinValidTimeRange(createPointRequestDTO.timestamp) ||
-            !PointUsecasesRules.passedAtLeast30MinFromLast(userPoints.last().timestamp, createPointRequestDTO.timestamp)
-          ) {
-            throw UsecaseRuleError()
-          }
-        }
+    if (result.isFailure) throw UsecaseRuleError("Failed to retrieve user points")
 
-        return pointsHandler.create(relatedUserId, createPointRequestDTO.timestamp)
+    val userPoints = result.getOrNull() ?: emptyList()
+    if (userPoints.isNotEmpty()) {
+      if (
+        !PointUsecasesRules.isWithinValidTimeRange(createPointRequestDTO.timestamp) ||
+        !PointUsecasesRules.passedAtLeast30MinFromLast(userPoints.last().timestamp, createPointRequestDTO.timestamp)
+      ) {
+        throw UsecaseRuleError("Invalid timestamp or rules not met")
       }
     }
 
-    throw UsecaseRuleError()
+    return pointsHandler.create(relatedUserId, createPointRequestDTO.timestamp)
   }
 
   /**

@@ -1,5 +1,7 @@
 package com.lucasalfare.flpoint.server.a_domain.model.dto
 
+import com.lucasalfare.flpoint.server.a_domain.model.ValidationError
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
@@ -13,4 +15,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreatePointRequestDTO(
   val timestamp: Instant
-)
+) {
+
+  init {
+    val now = Clock.System.now()
+    if (timestamp > now) {
+      throw ValidationError("Timestamp cannot be in the future")
+    }
+  }
+}

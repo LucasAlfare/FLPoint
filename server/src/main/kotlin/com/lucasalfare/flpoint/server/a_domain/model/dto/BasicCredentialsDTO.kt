@@ -31,13 +31,11 @@ data class BasicCredentialsDTO(
    * @throws ValidationError If any of the validation rules are violated.
    */
   init {
-    if (
-      email.isEmpty() ||
-      !email.matches(Constants.EMAIL_ADDRESS_PATTERN.toRegex()) ||
-      plainPassword.isEmpty() ||
-      plainPassword.length < 4
-    ) {
-      throw ValidationError()
+    when {
+      email.isEmpty() -> throw ValidationError("Email cannot be empty")
+      !email.matches(Constants.EMAIL_ADDRESS_PATTERN.toRegex()) -> throw ValidationError("Invalid email format")
+      plainPassword.isEmpty() -> throw ValidationError("Password cannot be empty")
+      plainPassword.length < 4 -> throw ValidationError("Password must be at least 4 characters long")
     }
   }
 }

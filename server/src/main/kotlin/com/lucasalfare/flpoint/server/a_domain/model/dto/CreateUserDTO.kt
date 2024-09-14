@@ -40,14 +40,12 @@ data class CreateUserDTO(
    * @throws ValidationError If any of the validation rules are violated.
    */
   init {
-    if (
-      name.isEmpty() ||
-      email.isEmpty() ||
-      !email.matches(Constants.EMAIL_ADDRESS_PATTERN.toRegex()) ||
-      plainPassword.isEmpty() ||
-      plainPassword.length < 4 // TODO: "4" is a rule
-    ) {
-      throw ValidationError()
+    when {
+      name.isEmpty() -> throw ValidationError("Name cannot be empty")
+      email.isEmpty() -> throw ValidationError("Email cannot be empty")
+      !email.matches(Constants.EMAIL_ADDRESS_PATTERN.toRegex()) -> throw ValidationError("Invalid email format")
+      plainPassword.isEmpty() -> throw ValidationError("Password cannot be empty")
+      plainPassword.length < 4 -> throw ValidationError("Password must be at least 4 characters long")
     }
   }
 }

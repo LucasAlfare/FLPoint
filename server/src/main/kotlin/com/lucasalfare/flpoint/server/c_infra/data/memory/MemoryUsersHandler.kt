@@ -30,7 +30,9 @@ object MemoryUsersHandler : UsersHandler {
   override suspend fun create(name: String, email: String, hashedPassword: String, role: UserRole): Result<Int> {
     val id = users.size + 1
 
-    if (users.any { it.id == id || it.email == email }) throw DatabaseError()
+    if (users.any { it.id == id || it.email == email }) {
+      throw DatabaseError("Error on inserting user info in database.")
+    }
 
     users += User(
       id = id,
