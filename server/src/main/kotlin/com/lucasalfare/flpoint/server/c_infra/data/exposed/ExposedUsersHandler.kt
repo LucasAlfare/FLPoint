@@ -39,7 +39,7 @@ object ExposedUsersHandler : UsersHandler {
         }.value
         Result.success(userId)
       } catch (e: Exception) {
-        Result.failure(DatabaseError()) // Changed to Result.failure
+        throw DatabaseError()
       }
     }
 
@@ -65,7 +65,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 
@@ -91,7 +91,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       user?.let { Result.success(it) } ?: Result.failure(DatabaseError())
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 
@@ -116,7 +116,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(users)
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 
@@ -150,7 +150,7 @@ object ExposedUsersHandler : UsersHandler {
       }
       Result.success(updatedRows > 0)
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 
@@ -168,7 +168,7 @@ object ExposedUsersHandler : UsersHandler {
       val deletedRows = Users.deleteWhere { Users.id eq id }
       Result.success(deletedRows > 0)
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 
@@ -185,7 +185,7 @@ object ExposedUsersHandler : UsersHandler {
       Users.deleteAll()
       Result.success(true)
     } catch (e: Exception) {
-      Result.failure(DatabaseError()) // Changed to Result.failure
+      throw DatabaseError()
     }
   }
 }
