@@ -22,7 +22,10 @@ dependencies {
   // dependências para gerenciamento de JWT
   implementation("io.ktor:ktor-server-auth:$ktor_version")
   implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
-  // implementation("io.ktor:ktor-serialization-jackson:$ktor_version")
+
+  // For some reason, above JWT auth not works without this :/
+  // this happens only in Docker!! :(
+  implementation("io.ktor:ktor-serialization-jackson:$ktor_version")
 
   // dependências para obter auxiliares de datas
   implementation("io.ktor:ktor-utils:$ktor_version")
