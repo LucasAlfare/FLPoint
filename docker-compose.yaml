@@ -1,0 +1,16 @@
+services:
+  fl-refs:
+    container_name: fl-points-container
+    build: .
+    # variables values obtained from local/private .env file
+    environment:
+      DATABASE_JDBC_URL: ${DATABASE_JDBC_URL}
+      DATABASE_JDBC_CLASS_NAME: ${DATABASE_JDBC_CLASS_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+#      ADMIN_EMAIL: ${ADMIN_EMAIL}
+#      ADMIN_PLAIN_PASSWORD: ${ADMIN_PLAIN_PASSWORD}
+      JWT_AUTH_REALM: ${JWT_AUTH_REALM}
+      JWT_ALGORITHM_SIGN_SECRET: ${JWT_ALGORITHM_SIGN_SECRET}
+    ports:
+      - "7171:7171"
