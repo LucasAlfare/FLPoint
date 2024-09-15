@@ -5,7 +5,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Routing.healthRoute() {
-  get {
+  get("/health") {
     call.respondText("Hello from Ktor! We are healthy!")
   }
 }
