@@ -6,7 +6,11 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTCreationException
+import com.lucasalfare.flpoint.server.a_domain.EnvsLoader.loadEnv
 import com.lucasalfare.flpoint.server.a_domain.model.UserRole
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Utility object for generating and verifying JSON Web Tokens (JWTs) using HMAC256 algorithm.
@@ -16,8 +20,8 @@ import com.lucasalfare.flpoint.server.a_domain.model.UserRole
  */
 object KtorJwtGenerator {
 
-  // Secret key used for signing JWTs. This should be kept secret and secure.
-  private val jwtAlgorithmSignSecret = "JWT_ALGORITHM_SECRET"
+//  private val jwtAlgorithmSignSecret = "JWT_ALGORITHM_SECRET"
+  private val jwtAlgorithmSignSecret = loadEnv("JWT_ALGORITHM_SIGN_SECRET")
 
   /**
    * The [JWTVerifier] instance used for verifying JWTs.
@@ -49,6 +53,7 @@ object KtorJwtGenerator {
         .withClaim("id", id)
         .withClaim("login", login)
         .withClaim("role", role.name)
+//        .withExpiresAt((Clock.System.now() + 5.minutes).toJavaInstant())
         .sign(Algorithm.HMAC256(jwtAlgorithmSignSecret))
     } catch (e: JWTCreationException) {
       // Log the exception or handle it as needed

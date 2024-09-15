@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration
 
+import com.lucasalfare.flpoint.server.a_domain.EnvsLoader.loadEnv
 import com.lucasalfare.flpoint.server.c_infra.security.jwt.ktor.KtorJwtGenerator
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -18,7 +19,7 @@ fun Application.authenticationConfiguration() {
 
   install(Authentication) {
     jwt("flpoint-jwt-auth") {
-      realm = "JWT_AUTH_REALM"
+      realm = loadEnv("JWT_AUTH_REALM")
       verifier(KtorJwtGenerator.verifier)
 
       validate { credential ->

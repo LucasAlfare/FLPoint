@@ -1,5 +1,6 @@
 package com.lucasalfare.flpoint.server.c_infra.webserver.ktor
 
+import com.lucasalfare.flpoint.server.a_domain.EnvsLoader.loadEnv
 import com.lucasalfare.flpoint.server.b_usecase.PointUsecases
 import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.configuration.authenticationConfiguration
@@ -19,8 +20,8 @@ import io.ktor.server.netty.*
  * @property pointUsecases The use cases related to point operations, which will be used in routing configuration.
  */
 class KtorLauncher(
-  val userUsecases: UserUsecases,
-  val pointUsecases: PointUsecases
+  private val userUsecases: UserUsecases,
+  private val pointUsecases: PointUsecases
 ) {
   /**
    * Starts the Ktor server with the configured settings.
@@ -32,7 +33,12 @@ class KtorLauncher(
    * - Routing configuration to set up application routes with provided use cases.
    */
   fun launch() {
-    embeddedServer(Netty, port = 7171) {
+    val webserverPort = loadEnv("WEBSERVER_PORT", throwWhenNull = true, throwWhenEmpty = true)
+
+    embeddedServer(
+      Netty,
+      port = webserverPort.toInt()
+    ) {
       serializationConfiguration()
       statusPagesConfiguration()
       authenticationConfiguration()
