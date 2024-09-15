@@ -5,6 +5,7 @@ import com.lucasalfare.flpoint.server.b_usecase.UserUsecases
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.admin.adminPointsCrudRoutes
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.dummy.protectedForAdminRoute
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.dummy.protectedRoute
+import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.healthRoute
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.point.pointsHandlingRoutes
 import com.lucasalfare.flpoint.server.c_infra.webserver.ktor.routes.user.userAccessRoutes
 import io.ktor.server.application.*
@@ -28,6 +29,7 @@ fun Application.routingConfiguration(
   pointUsecases: PointUsecases
 ) {
   routing {
+    healthRoute()
     protectedRoute()
     protectedForAdminRoute()
     userAccessRoutes(userUsecases)
