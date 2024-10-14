@@ -684,7 +684,9 @@ fun Routing.routesHandlers() {
     }
 
     delete("/admin/users/{id}") {
+      return@delete handleAsAuthenticatedAdmin {
 
+      }
     }
 
     get("/admin/points") {
