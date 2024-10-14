@@ -46,6 +46,12 @@ dependencies {
   TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
    */
   implementation("org.xerial:sqlite-jdbc:3.45.2.0")
+
+  /*
+  Database.connect("jdbc:h2:mem:regular", "org.h2.Driver")
+   */
+  implementation("com.h2database:h2:2.2.224")
+
   implementation("com.zaxxer:HikariCP:5.1.0")
 
   // isso aqui serve apenas para gerar os logs da engine do servidor...
