@@ -424,7 +424,7 @@ object ExposedDataCRUD : DataCRUD {
 //</editor-fold>
 
 //<editor-fold desc="DATA-USECASES">
-object DataUsecases {
+object AppUsecases {
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): Int {
     val nextHashedPassword = hashed(createUserRequestDTO.plainPassword)
     return ExposedDataCRUD.createUser(
@@ -686,14 +686,14 @@ fun Routing.routesHandlers() {
   // used for signup an user
   post("/register") {
     val dto = call.receive<CreateUserRequestDTO>()
-    val result = DataUsecases.signupUser(dto)
+    val result = AppUsecases.signupUser(dto)
     return@post call.respond(status = HttpStatusCode.Created, message = result)
   }
 
   // used for logging in a existing user
   post("/login") {
     val dto = call.receive<CredentialsDTO>()
-    val result = DataUsecases.loginUser(dto)
+    val result = AppUsecases.loginUser(dto)
     return@post call.respond(HttpStatusCode.OK, result)
   }
   //</editor-fold>
@@ -706,7 +706,7 @@ fun Routing.routesHandlers() {
       // TODO: handle "update password" logic
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val receivedCurrentPlainPassword = call.receive<UpdateUserPasswordRequestDTO>()
-      val result = DataUsecases.updateUserPassword(
+      val result = AppUsecases.updateUserPassword(
         userId = claims.userId,
         currentPlainPassword = receivedCurrentPlainPassword.currentPlainPassword,
         newPlainPassword = receivedCurrentPlainPassword.newPlainPassword
@@ -718,14 +718,14 @@ fun Routing.routesHandlers() {
     // used to create point
     post("/point") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
-      val result = DataUsecases.doPoint(claims.userId)
+      val result = AppUsecases.doPoint(claims.userId)
       return@post call.respond(HttpStatusCode.Created, result)
     }
 
     // Route for user getting only his own points
     get("/points") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
-      val result = DataUsecases.getUserPoints(claims.userId)
+      val result = AppUsecases.getUserPoints(claims.userId)
         ?: return@get call.respond(HttpStatusCode.NotFound, "No points found for requested user ID")
       return@get call.respond(HttpStatusCode.OK, result)
     }
