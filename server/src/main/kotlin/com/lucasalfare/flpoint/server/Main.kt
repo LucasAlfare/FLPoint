@@ -1,7 +1,3 @@
-/*
-- the user must be created with at least 1 time interval;
- */
-
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
 package com.lucasalfare.flpoint.server
@@ -39,18 +35,7 @@ import org.mindrot.jbcrypt.BCrypt
 import kotlin.time.Duration.Companion.minutes
 
 //<editor-fold desc="EXTENSIONS-SECTION">
-fun LocalTime.asInstant(
-  targetedTimeZone: TimeZone = TimeZone.UTC,
-  today: LocalDate = Clock.System.now().toLocalDateTime(targetedTimeZone).date
-): Instant = LocalDateTime(
-  year = today.year,
-  monthNumber = today.monthNumber,
-  dayOfMonth = today.dayOfMonth,
-  hour = hour,
-  minute = minute,
-  second = second
-).toInstant(timeZone = TimeZone.UTC)
-
+// TODO: check if was found a cyclic reference to avoid infinite loops
 fun Throwable.customRootCause(): Throwable {
   var current = this
   while (true) {
@@ -171,6 +156,10 @@ data class User(
   val isAdmin: Boolean
 ) {
 
+  init {
+    if (!isAdmin && timeIntervals.isEmpty()) throw ValidationError("A non-admin user must have at lease 1 time interval!")
+  }
+
   fun toUserDto() = UserDTO(
     id, name, email, timeIntervals, isAdmin
   )
@@ -179,7 +168,6 @@ data class User(
 data class Point(
   val id: Int,
   val relatedUserId: Int,
-//  val localDateTime: LocalDateTime
   val instant: Instant
 ) {
 
@@ -200,9 +188,6 @@ data class CreateUserRequestDTO(
     validateName(name)
     validateEmail(email)
     validatePassword(plainPassword)
-
-    if (timeIntervals.isEmpty())
-      throw ValidationError("At least one time interval must be provided")
   }
 }
 
@@ -210,7 +195,13 @@ data class CreateUserRequestDTO(
 data class UpdateUserPasswordRequestDTO(
   val currentPlainPassword: String,
   val newPlainPassword: String,
-)
+) {
+
+  init {
+    validatePassword(currentPlainPassword)
+    validatePassword(newPlainPassword)
+  }
+}
 
 @Serializable
 data class CredentialsDTO(
@@ -236,7 +227,6 @@ data class UserDTO(
 data class PointDTO(
   val id: Int,
   val relatedUserId: Int,
-//  val localDateTime: LocalDateTime
   val instant: Instant
 )
 
@@ -269,14 +259,11 @@ interface DataCRUD {
 
   suspend fun clearUsers(): Boolean
 
-  //  suspend fun createPoint(relatedUserId: Int, localDateTime: LocalDateTime): Int
   suspend fun createPoint(relatedUserId: Int, instant: Instant): Int
 
   suspend fun getPoint(id: Int): Point?
 
   suspend fun getPointsByUserId(userId: Int): List<Point>?
-
-  suspend fun updatePoint(id: Int): Boolean
 
   suspend fun deletePoint(id: Int): Boolean
 
@@ -296,8 +283,6 @@ object Users : IntIdTable("Users") {
 
 object Points : IntIdTable("Points") {
   val relatedUserId = integer("related_user_id").references(Users.id)
-
-  //  val localDateTime = datetime("local_date_time")
   val instant = timestamp("instant")
 }
 //</editor-fold>
@@ -389,7 +374,6 @@ object ExposedDataCRUD : DataCRUD {
       Points.insertAndGetId {
         it[Points.relatedUserId] = relatedUserId
         it[Points.instant] = instant
-//        it[Points.localDateTime] = localDateTime
       }.value
     }
 
@@ -403,7 +387,6 @@ object ExposedDataCRUD : DataCRUD {
             id = it[Points.id].value,
             relatedUserId = it[Points.relatedUserId],
             instant = it[Points.instant]
-//            localDateTime = it[Points.localDateTime]
           )
         }
       }
@@ -424,10 +407,6 @@ object ExposedDataCRUD : DataCRUD {
           it.ifEmpty { null }
         }
     }
-
-  override suspend fun updatePoint(id: Int): Boolean {
-    return false
-  }
 
   override suspend fun deletePoint(id: Int): Boolean =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to delete point by ID")) {
@@ -469,7 +448,7 @@ object DataUsecases {
         throw RuleViolatedError("Tried to do point in a time that is not in any of the user time intervals!")
       }
 
-      // we assume the list can not be null, it can only be empty, because a user with [userId] exists
+      // we assume the list can not be null, it can only be empty, because a user with [userId] was verified above
       val userInstants = ExposedDataCRUD.getPointsByUserId(it.id)!!
       if (userInstants.isNotEmpty()) {
         val lastInstant = userInstants.last().instant
@@ -553,7 +532,7 @@ object AppDB {
     try {
       queryFunction()
     } catch (e: Exception) {
-      if (onFailureThrowable == null) throw AppError("general error")
+      if (onFailureThrowable == null) throw Throwable("general error")
       else throw onFailureThrowable
     }
   }
@@ -697,22 +676,29 @@ fun Application.initKtorConfiguration() {
 
 //<editor-fold desc="KTOR-ROUTES-HANDLERS-SECTION">
 fun Routing.routesHandlers() {
+  //<editor-fold desc="PUBLIC-ROUTES">
+  // global root health route
   get("/health") { call.respondText("Hello from Kotlin/Ktor API!") }
 
+  // used for signup an user
   post("/register") {
     val dto = call.receive<CreateUserRequestDTO>()
     val result = DataUsecases.signupUser(dto)
     return@post call.respond(status = HttpStatusCode.Created, message = result)
   }
 
+  // used for logging in a existing user
   post("/login") {
     val dto = call.receive<CredentialsDTO>()
     val result = DataUsecases.loginUser(dto)
     return@post call.respond(HttpStatusCode.OK, result)
   }
+  //</editor-fold>
 
+  //<editor-fold desc="UNDER-AUTH-ROUTES">
   authenticate("flpoint-jwt-auth") {
-    //user auth routes
+    //<editor-fold desc="USER-ROUTES">
+    // used to update current password
     patch("/users/update-password") {
       // TODO: handle "update password" logic
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
@@ -726,7 +712,7 @@ fun Routing.routesHandlers() {
       return@patch call.respond(HttpStatusCode.OK, result)
     }
 
-    // Create point route
+    // used to create point
     post("/point") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = DataUsecases.doPoint(claims.userId)
@@ -740,38 +726,45 @@ fun Routing.routesHandlers() {
         ?: return@get call.respond(HttpStatusCode.NotFound, "No points found for requested user ID")
       return@get call.respond(HttpStatusCode.OK, result)
     }
+    //</editor-fold>
 
-    // admin auth routes
+    //<editor-fold desc="ADMIN-ONLY-ROUTES">
+    // admin health route
     get("/admin/health") {
-      // only for testing
       return@get handleAsAuthenticatedAdmin {
         call.respond(HttpStatusCode.OK)
       }
     }
 
+    // used to get all database users
     get("/admin/users") {
       return@get handleAsAuthenticatedAdmin {
 
       }
     }
 
+    // used to update the time intervals of the {id} user
     patch("/admin/users/{id}/update-time-intervals") {
       return@patch handleAsAuthenticatedAdmin {
 
       }
     }
 
+    // used to delete the {id} user
     delete("/admin/users/{id}") {
       return@delete handleAsAuthenticatedAdmin {
 
       }
     }
 
+    // used to retrieve all the points of the database
     get("/admin/points") {
       return@get handleAsAuthenticatedAdmin {
 
       }
     }
+    //</editor-fold>
   }
+  //</editor-fold>
 }
 //</editor-fold>
