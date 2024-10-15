@@ -345,7 +345,9 @@ object ExposedDataCRUD : DataCRUD {
       }
     }
 
-  override suspend fun getAllUsers(): List<User> = AppDB.safeQuery {
+  override suspend fun getAllUsers(): List<User> = AppDB.safeQuery(
+    onFailureThrowable = DataHandlingError("Error trying to retrieve all application users")
+  ) {
     Users.selectAll().map {
       User(
         id = it[Users.id].value,
@@ -510,6 +512,8 @@ object AppUsecases {
     }
 
   suspend fun getAllAppUsers(): List<UserDTO> = ExposedDataCRUD.getAllUsers().map { it.toUserDto() }
+
+  suspend fun deleteUser(userId: Int): Boolean = ExposedDataCRUD.deleteUser(userId)
 }
 //</editor-fold>
 
@@ -778,7 +782,9 @@ fun Routing.routesHandlers() {
     // used to delete the {id} user
     delete("/admin/users/{id}") {
       return@delete handleAsAuthenticatedAdmin {
-
+        val userId = call.parameters["id"] ?: throw AppError("Missing user ID")
+        val result = AppUsecases.deleteUser(userId.toInt())
+        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
