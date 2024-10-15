@@ -32,16 +32,16 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.mindrot.jbcrypt.BCrypt
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 //<editor-fold desc="EXTENSIONS-SECTION">
 fun LocalTime.asInstant(
-  today: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+  targetedTimeZone: TimeZone = TimeZone.UTC,
+  today: LocalDate = Clock.System.now().toLocalDateTime(targetedTimeZone).date
 ): Instant = LocalDateTime(
   year = today.year,
   monthNumber = today.monthNumber,
@@ -75,14 +75,21 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 //<editor-fold desc="RULES-SECTION">
 fun instantIsInValidTimeInterval(
   check: Instant,
-  timeIntervals: List<TimeInterval>,
-  lowerTolerance: Duration = Constants.DEFAULT_LOWER_POINT_TOLERANCE_DURATION.minutes,
-  higherTolerance: Duration = Constants.DEFAULT_HIGHER_POINT_TOLERANCE_DURATION.minutes
+  user: User,
+  enterTolerance: Int = Constants.DEFAULT_ENTER_TOLERANCE_MINUTES,
+  exitTolerance: Int = Constants.DEFAULT_EXIT_TOLERANCE_MINUTES
 ): Boolean {
-  for (interval in timeIntervals) {
-    val nextEnter = interval.enter.asInstant() - lowerTolerance
-    val nextExit = interval.exit.asInstant() + higherTolerance
-    if (check in nextEnter..nextExit) return true // if just one interval is satisfied, then ok
+  // we check the instant as a local date time in the stored user TZ
+  val checkLocal = check.toLocalDateTime(user.timeZone)
+
+  // time intervals are just flat hours in a day, e.g.: "enter=8:00 morning; exit=14:00 afternoon"
+  // due to this, they are not taking care about TZ
+  // also, for each interval, we create the tolerated interval, that uses params to adjust its tolerance
+  for (interval in user.timeIntervals.map { it.adjustedByTolerances(enterTolerance, exitTolerance) }) {
+    // if the checking time is inside of at least one of the tolerated intervals, then early return true
+    if (checkLocal.time in (interval.enter..interval.exit)) {
+      return true
+    }
   }
 
   return false
@@ -112,8 +119,8 @@ class Constants {
   companion object {
     const val DEFAULT_MIN_PASSWORD_LENGTH = 4
 
-    const val DEFAULT_LOWER_POINT_TOLERANCE_DURATION = 5 // minutes
-    const val DEFAULT_HIGHER_POINT_TOLERANCE_DURATION = 5 // minutes
+    const val DEFAULT_ENTER_TOLERANCE_MINUTES = 5 // minutes
+    const val DEFAULT_EXIT_TOLERANCE_MINUTES = 5 // minutes
     const val DEFAULT_JWT_EXPIRATION_TIME = 10 // minutes
 
     const val DATABASE_SQLITE_URL = "jdbc:sqlite:./data.db"
@@ -136,7 +143,21 @@ class NoPrivilegeError(message: String = "NoPrivilegeError") : AppError(message)
 data class TimeInterval(
   val enter: LocalTime,
   val exit: LocalTime
-)
+) {
+
+  init {
+    if (exit < enter) throw ValidationError("Exit time is earlier than Enter time!")
+    // TODO: validate if the difference between enter/exit is less/higher than something
+  }
+
+  fun adjustedByTolerances(
+    enterTolerance: Int,
+    exitTolerance: Int
+  ): TimeInterval = TimeInterval(
+    enter = LocalTime.fromMillisecondOfDay(enter.toMillisecondOfDay() + (enterTolerance * 60 * 1000)),
+    exit = LocalTime.fromMillisecondOfDay(exit.toMillisecondOfDay() - (exitTolerance * 60 * 1000))
+  )
+}
 
 // TODO: in the future include info about TIME_ZONE!
 // TODO: we must be able to validate times using the stored user TZ!
@@ -146,6 +167,7 @@ data class User(
   val email: String,
   val hashedPassword: String,
   val timeIntervals: List<TimeInterval>,
+  val timeZone: TimeZone,
   val isAdmin: Boolean
 ) {
 
@@ -157,11 +179,12 @@ data class User(
 data class Point(
   val id: Int,
   val relatedUserId: Int,
-  val localDateTime: LocalDateTime
+//  val localDateTime: LocalDateTime
+  val instant: Instant
 ) {
 
   fun toPointDto() = PointDTO(
-    id, relatedUserId, localDateTime
+    id, relatedUserId, instant
   )
 }
 
@@ -170,7 +193,8 @@ data class CreateUserRequestDTO(
   val name: String,
   val email: String,
   val plainPassword: String,
-  val timeIntervals: List<TimeInterval>
+  val timeIntervals: List<TimeInterval>,
+  val timeZone: TimeZone = TimeZone.UTC
 ) {
   init {
     validateName(name)
@@ -181,6 +205,12 @@ data class CreateUserRequestDTO(
       throw ValidationError("At least one time interval must be provided")
   }
 }
+
+@Serializable
+data class UpdateUserPasswordRequestDTO(
+  val currentPlainPassword: String,
+  val newPlainPassword: String,
+)
 
 @Serializable
 data class CredentialsDTO(
@@ -206,7 +236,8 @@ data class UserDTO(
 data class PointDTO(
   val id: Int,
   val relatedUserId: Int,
-  val localDateTime: LocalDateTime
+//  val localDateTime: LocalDateTime
+  val instant: Instant
 )
 
 interface DataCRUD {
@@ -216,6 +247,7 @@ interface DataCRUD {
     email: String,
     hashedPassword: String,
     timeIntervals: List<TimeInterval>,
+    timeZone: TimeZone,
     isAdmin: Boolean
   ): Int
 
@@ -229,6 +261,7 @@ interface DataCRUD {
     email: String? = null,
     hashedPassword: String? = null,
     timeIntervals: List<TimeInterval>? = null,
+    timeZone: TimeZone? = null,
     isAdmin: Boolean? = null
   ): Boolean
 
@@ -236,7 +269,8 @@ interface DataCRUD {
 
   suspend fun clearUsers(): Boolean
 
-  suspend fun createPoint(relatedUserId: Int, localDateTime: LocalDateTime): Int
+  //  suspend fun createPoint(relatedUserId: Int, localDateTime: LocalDateTime): Int
+  suspend fun createPoint(relatedUserId: Int, instant: Instant): Int
 
   suspend fun getPoint(id: Int): Point?
 
@@ -255,13 +289,16 @@ object Users : IntIdTable("Users") {
   val name = varchar("name", 255)
   val email = varchar("email", 255).uniqueIndex()
   val hashedPassword = varchar("hashed_password", 255)
-  val isAdmin = bool("is_admin").default(false)
   val timeIntervals = array<TimeInterval>("time_intervals")
+  val timeZone = text("time_zone")
+  val isAdmin = bool("is_admin").default(false)
 }
 
 object Points : IntIdTable("Points") {
   val relatedUserId = integer("related_user_id").references(Users.id)
-  val localDateTime = datetime("local_date_time")
+
+  //  val localDateTime = datetime("local_date_time")
+  val instant = timestamp("instant")
 }
 //</editor-fold>
 
@@ -273,23 +310,21 @@ object ExposedDataCRUD : DataCRUD {
     email: String,
     hashedPassword: String,
     timeIntervals: List<TimeInterval>,
+    timeZone: TimeZone,
     isAdmin: Boolean
-  ): Int = AppDB.exposedQuery {
-    try {
-      Users.insertAndGetId {
-        it[Users.name] = name
-        it[Users.email] = email
-        it[Users.hashedPassword] = hashedPassword
-        it[Users.timeIntervals] = timeIntervals
-        it[Users.isAdmin] = isAdmin
-      }.value
-    } catch (e: Exception) {
-      throw DataHandlingError("Could not to create user")
-    }
+  ): Int = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Could not to create user")) {
+    Users.insertAndGetId {
+      it[Users.name] = name
+      it[Users.email] = email
+      it[Users.hashedPassword] = hashedPassword
+      it[Users.timeIntervals] = timeIntervals
+      it[Users.timeZone] = timeZone.toString()
+      it[Users.isAdmin] = isAdmin
+    }.value
   }
 
-  override suspend fun getUser(id: Int): User? = AppDB.exposedQuery {
-    try {
+  override suspend fun getUser(id: Int): User? =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error selecting user from database")) {
       Users.selectAll().where { Users.id eq id }.singleOrNull().let {
         if (it == null) null
         else User(
@@ -298,16 +333,14 @@ object ExposedDataCRUD : DataCRUD {
           email = it[Users.email],
           hashedPassword = it[Users.hashedPassword],
           timeIntervals = it[Users.timeIntervals],
+          timeZone = TimeZone.of(it[Users.timeZone]),
           isAdmin = it[Users.isAdmin]
         )
       }
-    } catch (e: Exception) {
-      throw DataHandlingError("Error selecting user from database")
     }
-  }
 
-  override suspend fun getUser(email: String): User? = AppDB.exposedQuery {
-    try {
+  override suspend fun getUser(email: String): User? =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error selecting user from database")) {
       Users.selectAll().where { Users.email eq email }.singleOrNull().let {
         if (it == null) null
         else User(
@@ -316,13 +349,11 @@ object ExposedDataCRUD : DataCRUD {
           email = it[Users.email],
           hashedPassword = it[Users.hashedPassword],
           timeIntervals = it[Users.timeIntervals],
+          timeZone = TimeZone.of(it[Users.timeZone]),
           isAdmin = it[Users.isAdmin]
         )
       }
-    } catch (e: Exception) {
-      throw DataHandlingError("Error selecting user from database")
     }
-  }
 
   override suspend fun updateUser(
     id: Int,
@@ -330,50 +361,40 @@ object ExposedDataCRUD : DataCRUD {
     email: String?,
     hashedPassword: String?,
     timeIntervals: List<TimeInterval>?,
+    timeZone: TimeZone?,
     isAdmin: Boolean?
-  ): Boolean = AppDB.exposedQuery {
-    try {
-      Users.update(where = { Users.id eq id }) {
-        if (name != null) it[Users.name] = name
-        if (email != null) it[Users.email] = email
-        if (hashedPassword != null) it[Users.hashedPassword] = hashedPassword
-        if (timeIntervals != null) it[Users.timeIntervals] = timeIntervals
-        if (isAdmin != null) it[Users.isAdmin] = isAdmin
-      } > 0
-    } catch (e: Exception) {
-      throw DataHandlingError("Error updating user by ID")
-    }
+  ): Boolean = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error updating user by ID")) {
+    Users.update(where = { Users.id eq id }) {
+      if (name != null) it[Users.name] = name
+      if (email != null) it[Users.email] = email
+      if (hashedPassword != null) it[Users.hashedPassword] = hashedPassword
+      if (timeIntervals != null) it[Users.timeIntervals] = timeIntervals
+      if (timeZone != null) it[Users.timeZone] = timeZone.toString()
+      if (isAdmin != null) it[Users.isAdmin] = isAdmin
+    } > 0
   }
 
-  override suspend fun deleteUser(id: Int): Boolean = AppDB.exposedQuery {
-    try {
+  override suspend fun deleteUser(id: Int): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error deleting user by ID")) {
       Users.deleteWhere { Users.id eq id } > 0
-    } catch (e: Exception) {
-      throw DataHandlingError("Error deleting user by ID")
     }
-  }
 
-  override suspend fun clearUsers(): Boolean = AppDB.exposedQuery {
-    try {
+  override suspend fun clearUsers(): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error clearing users")) {
       Users.deleteAll() > 0
-    } catch (e: Exception) {
-      throw DataHandlingError("Error clearing users")
     }
-  }
 
-  override suspend fun createPoint(relatedUserId: Int, localDateTime: LocalDateTime): Int = AppDB.exposedQuery {
-    try {
+  override suspend fun createPoint(relatedUserId: Int, instant: Instant): Int =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error inserting point")) {
       Points.insertAndGetId {
         it[Points.relatedUserId] = relatedUserId
-        it[Points.localDateTime] = localDateTime
+        it[Points.instant] = instant
+//        it[Points.localDateTime] = localDateTime
       }.value
-    } catch (e: Exception) {
-      throw DataHandlingError("Error inserting point")
     }
-  }
 
-  override suspend fun getPoint(id: Int): Point? = AppDB.exposedQuery {
-    try {
+  override suspend fun getPoint(id: Int): Point? =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to select the desired point by ID")) {
       Points.selectAll().where { Points.id eq id }.singleOrNull().let {
         if (it == null) {
           null
@@ -381,55 +402,47 @@ object ExposedDataCRUD : DataCRUD {
           Point(
             id = it[Points.id].value,
             relatedUserId = it[Points.relatedUserId],
-            localDateTime = it[Points.localDateTime]
+            instant = it[Points.instant]
+//            localDateTime = it[Points.localDateTime]
           )
         }
       }
-    } catch (e: Exception) {
-      throw DataHandlingError("Was not possible to select the desired point by ID")
     }
-  }
 
-  override suspend fun getPointsByUserId(userId: Int): List<Point>? = AppDB.exposedQuery {
-    try {
+  override suspend fun getPointsByUserId(userId: Int): List<Point>? =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible select points by the desired user ID")) {
       Points
         .selectAll()
         .where { Points.relatedUserId eq userId }
         .map {
-          Point(it[Points.id].value, it[Points.relatedUserId], it[Points.localDateTime])
+          Point(
+            id = it[Points.id].value,
+            relatedUserId = it[Points.relatedUserId],
+            instant = it[Points.instant]
+          )
         }.let {
           it.ifEmpty { null }
         }
-    } catch (e: Exception) {
-      throw DataHandlingError("Was not possible select points by the desired user ID")
     }
-  }
 
   override suspend fun updatePoint(id: Int): Boolean {
     return false
   }
 
-  override suspend fun deletePoint(id: Int): Boolean = AppDB.exposedQuery {
-    try {
+  override suspend fun deletePoint(id: Int): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to delete point by ID")) {
       Points.deleteWhere { Points.id eq id } == 1
-    } catch (e: Exception) {
-      throw DataHandlingError("Was not possible to delete point by ID")
     }
-  }
 
-  override suspend fun clearPoints(): Boolean = AppDB.exposedQuery {
-    try {
+  override suspend fun clearPoints(): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to clear all points")) {
       Points.deleteAll() >= 0
-    } catch (e: Exception) {
-      throw DataHandlingError("Was not possible to clear all points")
     }
-  }
 }
 //</editor-fold>
 
 //<editor-fold desc="DATA-USECASES">
 object DataUsecases {
-
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): Int {
     val nextHashedPassword = hashed(createUserRequestDTO.plainPassword)
     return ExposedDataCRUD.createUser(
@@ -437,6 +450,7 @@ object DataUsecases {
       email = createUserRequestDTO.email,
       hashedPassword = nextHashedPassword,
       timeIntervals = createUserRequestDTO.timeIntervals,
+      timeZone = createUserRequestDTO.timeZone,
       isAdmin = isAdmin
     )
   }
@@ -447,20 +461,55 @@ object DataUsecases {
   }
 
   suspend fun doPoint(userId: Int): Int {
-    // TODO: we need to user the user TZ instead. But, to use it, it needs to be stored in DB
-    val nextPointLocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+    ExposedDataCRUD.getUser(userId).let {
+      if (it == null) throw AppError("User not found")
 
-    // TODO: validate if the above LDT is in all user timeIntervals
-    // TODO: validate if the above LDT is at least 30 min away from last registered point
-    // TODO: if none rules was ok, then throw RuleViolatedError()
+      val generatedInstant = Clock.System.now()
+      if (!instantIsInValidTimeInterval(check = generatedInstant, user = it)) {
+        throw RuleViolatedError("Tried to do point in a time that is not in any of the user time intervals!")
+      }
 
-    // if rules was verified, then store
-    return ExposedDataCRUD.createPoint(relatedUserId = userId, localDateTime = nextPointLocalDateTime)
+      // we assume the list can not be null, it can only be empty, because a user with [userId] exists
+      val userInstants = ExposedDataCRUD.getPointsByUserId(it.id)!!
+      if (userInstants.isNotEmpty()) {
+        val lastInstant = userInstants.last().instant
+        if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
+          throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
+        }
+      }
+
+      return ExposedDataCRUD.createPoint(
+        relatedUserId = userId,
+        instant = generatedInstant
+      )
+    }
   }
 
   suspend fun getUserPoints(userId: Int): List<PointDTO>? {
     return ExposedDataCRUD.getPointsByUserId(userId)?.map { it.toPointDto() }
   }
+
+  suspend fun updateUserPassword(userId: Int, currentPlainPassword: String, newPlainPassword: String): Boolean =
+    ExposedDataCRUD.getUser(userId).let { user: User? ->
+      if (user == null) throw AppError("User not found by ID")
+
+      if (!plainMatchesHashed(plain = currentPlainPassword, hashed = user.hashedPassword)) {
+        throw AuthenticationError("Can not to update password. Current password doesn't match!")
+      }
+
+      ExposedDataCRUD.updateUser(
+        id = userId,
+        hashedPassword = hashed(newPlainPassword)
+      )
+    }
+
+  suspend fun updateUserTimeIntervals(userId: Int, newIntervals: List<TimeInterval>): Boolean =
+    ExposedDataCRUD.getUser(userId).let { user: User? ->
+      if (user == null) throw AppError("User was not found by ID")
+      if (newIntervals.isEmpty()) throw RuleViolatedError("Can not to update user time intervals: new intervals list is empty")
+
+      ExposedDataCRUD.updateUser(id = userId, timeIntervals = newIntervals)
+    }
 }
 //</editor-fold>
 
@@ -492,10 +541,22 @@ object AppDB {
     }
   }
 
-  suspend fun <T> exposedQuery(queryCodeBlock: suspend () -> T): T =
+  private suspend fun <T> exposedQuery(queryCodeBlock: suspend () -> T): T =
     newSuspendedTransaction(context = Dispatchers.IO, db = DB) {
       queryCodeBlock()
     }
+
+  suspend fun <T> safeQuery(
+    onFailureThrowable: Throwable? = null,
+    queryFunction: suspend () -> T
+  ): T = exposedQuery {
+    try {
+      queryFunction()
+    } catch (e: Exception) {
+      if (onFailureThrowable == null) throw AppError("general error")
+      else throw onFailureThrowable
+    }
+  }
 
   private fun createHikariDataSource(
     jdbcUrl: String,
@@ -651,15 +712,18 @@ fun Routing.routesHandlers() {
   }
 
   authenticate("flpoint-jwt-auth") {
-    get("/admin-only") {
-      // only for testing
-      return@get handleAsAuthenticatedAdmin {
-        call.respond(HttpStatusCode.OK)
-      }
-    }
-
-    patch("/users") {
+    //user auth routes
+    patch("/users/update-password") {
       // TODO: handle "update password" logic
+      val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
+      val receivedCurrentPlainPassword = call.receive<UpdateUserPasswordRequestDTO>()
+      val result = DataUsecases.updateUserPassword(
+        userId = claims.userId,
+        currentPlainPassword = receivedCurrentPlainPassword.currentPlainPassword,
+        newPlainPassword = receivedCurrentPlainPassword.newPlainPassword
+      )
+
+      return@patch call.respond(HttpStatusCode.OK, result)
     }
 
     // Create point route
@@ -677,8 +741,22 @@ fun Routing.routesHandlers() {
       return@get call.respond(HttpStatusCode.OK, result)
     }
 
+    // admin auth routes
+    get("/admin/health") {
+      // only for testing
+      return@get handleAsAuthenticatedAdmin {
+        call.respond(HttpStatusCode.OK)
+      }
+    }
+
     get("/admin/users") {
       return@get handleAsAuthenticatedAdmin {
+
+      }
+    }
+
+    patch("/admin/users/{id}/update-time-intervals") {
+      return@patch handleAsAuthenticatedAdmin {
 
       }
     }
