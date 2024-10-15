@@ -270,6 +270,8 @@ interface DataCRUD {
 
   suspend fun getPointsByUserId(userId: Int): List<Point>?
 
+  suspend fun getAllPoints(): List<Point>
+
   suspend fun deletePoint(id: Int): Boolean
 
   suspend fun clearPoints(): Boolean
@@ -429,6 +431,18 @@ object ExposedDataCRUD : DataCRUD {
         }
     }
 
+  override suspend fun getAllPoints(): List<Point> = AppDB.safeQuery(
+    onFailureThrowable = DataHandlingError("Error trying to retrieve all points of the application.")
+  ) {
+    Points.selectAll().map {
+      Point(
+        id = it[Points.id].value,
+        relatedUserId = it[Points.relatedUserId],
+        instant = it[Points.instant]
+      )
+    }
+  }
+
   override suspend fun deletePoint(id: Int): Boolean =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to delete point by ID")) {
       Points.deleteWhere { Points.id eq id } == 1
@@ -488,6 +502,8 @@ object AppUsecases {
   suspend fun getUserPoints(userId: Int): List<PointDTO>? {
     return ExposedDataCRUD.getPointsByUserId(userId)?.map { it.toPointDto() }
   }
+
+  suspend fun getAllAppPoints(): List<PointDTO> = ExposedDataCRUD.getAllPoints().map { it.toPointDto() }
 
   suspend fun updateUserPassword(userId: Int, currentPlainPassword: String, newPlainPassword: String): Boolean =
     ExposedDataCRUD.getUser(userId).let { user: User? ->
@@ -791,7 +807,8 @@ fun Routing.routesHandlers() {
     // used to retrieve all the points of the database
     get("/admin/points") {
       return@get handleAsAuthenticatedAdmin {
-
+        val result = AppUsecases.getAllAppPoints()
+        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
     //</editor-fold>
