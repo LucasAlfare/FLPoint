@@ -1,3 +1,8 @@
+/**
+ * pt-br: Arquivão gigante, só quero sair codando agora, tô nem aí 😳
+ *
+ * en-us: Giant single file, now I just want to start coding, I don't care 😳
+ */
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
 package com.lucasalfare.flpoint.server
