@@ -248,6 +248,8 @@ interface DataCRUD {
 
   suspend fun getUser(email: String): User?
 
+  suspend fun getAllUsers(): List<User>
+
   suspend fun updateUser(
     id: Int,
     name: String? = null,
@@ -342,6 +344,20 @@ object ExposedDataCRUD : DataCRUD {
         )
       }
     }
+
+  override suspend fun getAllUsers(): List<User> = AppDB.safeQuery {
+    Users.selectAll().map {
+      User(
+        id = it[Users.id].value,
+        name = it[Users.name],
+        email = it[Users.email],
+        hashedPassword = it[Users.hashedPassword],
+        timeIntervals = it[Users.timeIntervals],
+        timeZone = TimeZone.of(it[Users.timeZone]),
+        isAdmin = it[Users.isAdmin]
+      )
+    }
+  }
 
   override suspend fun updateUser(
     id: Int,
@@ -492,6 +508,8 @@ object AppUsecases {
 
       ExposedDataCRUD.updateUser(id = userId, timeIntervals = newIntervals)
     }
+
+  suspend fun getAllAppUsers(): List<UserDTO> = ExposedDataCRUD.getAllUsers().map { it.toUserDto() }
 }
 //</editor-fold>
 
@@ -742,7 +760,8 @@ fun Routing.routesHandlers() {
     // used to get all database users
     get("/admin/users") {
       return@get handleAsAuthenticatedAdmin {
-
+        val result = AppUsecases.getAllAppUsers()
+        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
