@@ -144,8 +144,6 @@ data class TimeInterval(
   )
 }
 
-// TODO: in the future include info about TIME_ZONE!
-// TODO: we must be able to validate times using the stored user TZ!
 data class User(
   val id: Int,
   val name: String,
