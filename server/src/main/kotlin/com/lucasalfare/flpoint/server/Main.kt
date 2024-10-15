@@ -768,7 +768,10 @@ fun Routing.routesHandlers() {
     // used to update the time intervals of the {id} user
     patch("/admin/users/{id}/update-time-intervals") {
       return@patch handleAsAuthenticatedAdmin {
-
+        val userId = call.parameters["id"] ?: throw AppError("Missing path parameter user ID")
+        val receivedTimeIntervals = call.receive<List<TimeInterval>>()
+        val result = AppUsecases.updateUserTimeIntervals(userId.toInt(), receivedTimeIntervals)
+        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
