@@ -139,6 +139,14 @@ data class TimeInterval(
     // TODO: validate if the difference between enter/exit is less/higher than something
   }
 
+  /*
+  we are keeping some string-parsing functions to avoid using extra tables
+  for time intervals and to avoid using "array" column type, once it is
+  only compatible with Postgre and H2 dialects.
+
+ Look "Users" table in the Exposed Schema to see the [timeIntervalsStringList]
+ column.
+   */
   companion object {
     /*
     hh:mm/hh:mm
@@ -316,9 +324,6 @@ object Users : IntIdTable("Users") {
   val email = varchar("email", 255).uniqueIndex()
   val hashedPassword = varchar("hashed_password", 255)
   val timeIntervalsStringList = text("time_intervals")
-
-  //  val timeIntervals = array<TimeInterval>("time_intervals")
-
   val timeZone = text("time_zone")
   val isAdmin = bool("is_admin").default(false)
 }
