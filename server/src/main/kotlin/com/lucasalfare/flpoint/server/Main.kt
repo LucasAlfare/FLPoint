@@ -63,20 +63,14 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 //</editor-fold>
 
 //<editor-fold desc="RULES-SECTION">
-fun instantIsInValidTimeInterval(
-  check: Instant,
-  user: User,
-  enterTolerance: Int = Constants.DEFAULT_ENTER_TOLERANCE_MINUTES,
-  exitTolerance: Int = Constants.DEFAULT_EXIT_TOLERANCE_MINUTES
-): Boolean {
+fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
   // we check the instant as a local date time in the stored user TZ
   val checkLocal = check.toLocalDateTime(user.timeZone)
 
   // time intervals are just flat hours in a day, e.g.: "enter=8:00 morning; exit=14:00 afternoon"
   // due to this, they are not taking care about TZ
-  // also, for each interval, we create the tolerated interval, that uses params to adjust its tolerance
-  for (interval in user.timeIntervals.map { it.adjustedByTolerances(enterTolerance, exitTolerance) }) {
-    // if the checking time is inside of at least one of the tolerated intervals, then early return true
+  for (interval in user.timeIntervals) {
+    // if the checking time is inside of at least one of intervals, then early return true
     if (checkLocal.time in (interval.enter..interval.exit)) {
       return true
     }
@@ -84,6 +78,10 @@ fun instantIsInValidTimeInterval(
 
   return false
 }
+
+// TODO: include rule about if checking instant is in tolerated times
+// TODO: this should be implemented in modeling and in Usecases:
+// TODO: if outside a tolerated range, then add some flag to the user...
 
 fun instantIsAtLeast30MinutesAwayFromLast(check: Instant, lastInstant: Instant): Boolean =
   check - lastInstant >= 30.minutes
@@ -116,7 +114,8 @@ class Constants {
     const val DATABASE_SQLITE_URL = "jdbc:sqlite:./data.db"
 
     // in memory H2, for testing
-    const val DATABASE_H2_URL = "jdbc:h2:mem:regular"
+//    const val DATABASE_H2_URL = "jdbc:h2:mem:regular"
+    const val DATABASE_H2_URL = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;"
     const val DATABASE_H2_DRIVER = "org.h2.Driver"
   }
 }
@@ -140,13 +139,45 @@ data class TimeInterval(
     // TODO: validate if the difference between enter/exit is less/higher than something
   }
 
-  fun adjustedByTolerances(
-    enterTolerance: Int,
-    exitTolerance: Int
-  ): TimeInterval = TimeInterval(
-    enter = LocalTime.fromMillisecondOfDay(enter.toMillisecondOfDay() + (enterTolerance * 60 * 1000)),
-    exit = LocalTime.fromMillisecondOfDay(exit.toMillisecondOfDay() - (exitTolerance * 60 * 1000))
-  )
+  companion object {
+    /*
+    hh:mm/hh:mm
+     */
+    fun fromString(s: String): TimeInterval {
+      val split = s.split("/")
+      if (split.size != 2) throw AppError("Can not to build TimeInterval from the string [$s].")
+
+      try {
+        val enterTime = split[0].split(":")
+        val exitTime = split[1].split(":")
+
+        val nextEnter = LocalTime(hour = enterTime[0].toInt(), minute = enterTime[1].toInt())
+        val nextExit = LocalTime(hour = exitTime[0].toInt(), minute = exitTime[1].toInt())
+
+        return TimeInterval(
+          enter = nextEnter,
+          exit = nextExit
+        )
+      } catch (e: Exception) {
+        throw AppError("Was not possible to parse and build a TimeInterval instance from the string [$s].")
+      }
+    }
+
+    /*
+    [hh:mm/hh:mm, ...]
+     */
+    fun fromStringList(sList: String): List<TimeInterval> {
+      val sanitized = sList.replace("[", "").replace("]", "").replace(" ", "").split(",")
+      return sanitized.map { fromString(it) }
+    }
+
+    fun listToString(timeIntervals: List<TimeInterval>): String = timeIntervals.map { it.toString() }.toString()
+  }
+
+  /*
+  hh:mm,hh:mm
+  */
+  override fun toString() = "${enter.hour}:${enter.minute}/${exit.hour}:${exit.minute}"
 }
 
 data class User(
@@ -160,7 +191,8 @@ data class User(
 ) {
 
   init {
-    if (!isAdmin && timeIntervals.isEmpty()) throw ValidationError("A non-admin user must have at lease 1 time interval!")
+    if (!isAdmin && timeIntervals.isEmpty())
+      throw ValidationError("A non-admin user must have at lease 1 time interval!")
   }
 
   fun toUserDto() = UserDTO(
@@ -283,7 +315,10 @@ object Users : IntIdTable("Users") {
   val name = varchar("name", 255)
   val email = varchar("email", 255).uniqueIndex()
   val hashedPassword = varchar("hashed_password", 255)
-  val timeIntervals = array<TimeInterval>("time_intervals")
+  val timeIntervalsStringList = text("time_intervals")
+
+  //  val timeIntervals = array<TimeInterval>("time_intervals")
+
   val timeZone = text("time_zone")
   val isAdmin = bool("is_admin").default(false)
 }
@@ -309,7 +344,7 @@ object ExposedDataCRUD : DataCRUD {
       it[Users.name] = name
       it[Users.email] = email
       it[Users.hashedPassword] = hashedPassword
-      it[Users.timeIntervals] = timeIntervals
+      it[Users.timeIntervalsStringList] = TimeInterval.listToString(timeIntervals)
       it[Users.timeZone] = timeZone.toString()
       it[Users.isAdmin] = isAdmin
     }.value
@@ -324,7 +359,7 @@ object ExposedDataCRUD : DataCRUD {
           name = it[Users.name],
           email = it[Users.email],
           hashedPassword = it[Users.hashedPassword],
-          timeIntervals = it[Users.timeIntervals],
+          timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
           timeZone = TimeZone.of(it[Users.timeZone]),
           isAdmin = it[Users.isAdmin]
         )
@@ -340,7 +375,7 @@ object ExposedDataCRUD : DataCRUD {
           name = it[Users.name],
           email = it[Users.email],
           hashedPassword = it[Users.hashedPassword],
-          timeIntervals = it[Users.timeIntervals],
+          timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
           timeZone = TimeZone.of(it[Users.timeZone]),
           isAdmin = it[Users.isAdmin]
         )
@@ -356,7 +391,7 @@ object ExposedDataCRUD : DataCRUD {
         name = it[Users.name],
         email = it[Users.email],
         hashedPassword = it[Users.hashedPassword],
-        timeIntervals = it[Users.timeIntervals],
+        timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
         timeZone = TimeZone.of(it[Users.timeZone]),
         isAdmin = it[Users.isAdmin]
       )
@@ -376,7 +411,7 @@ object ExposedDataCRUD : DataCRUD {
       if (name != null) it[Users.name] = name
       if (email != null) it[Users.email] = email
       if (hashedPassword != null) it[Users.hashedPassword] = hashedPassword
-      if (timeIntervals != null) it[Users.timeIntervals] = timeIntervals
+      if (timeIntervals != null) it[Users.timeIntervalsStringList] = TimeInterval.listToString(timeIntervals)
       if (timeZone != null) it[Users.timeZone] = timeZone.toString()
       if (isAdmin != null) it[Users.isAdmin] = isAdmin
     } > 0
@@ -559,6 +594,10 @@ object AppDB {
     transaction(DB) {
       onFirstTransactionCallback()
     }
+  }
+
+  fun isDatabaseConnected(): Boolean {
+    return this::hikariDataSource.isInitialized && !hikariDataSource.isClosed
   }
 
   private suspend fun <T> exposedQuery(queryCodeBlock: suspend () -> T): T =
