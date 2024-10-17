@@ -498,14 +498,23 @@ object ExposedDataCRUD : DataCRUD {
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): Int {
-    val nextHashedPassword = hashed(createUserRequestDTO.plainPassword)
-    return ExposedDataCRUD.createUser(
+    val nextUser = User(
+      id = -1, // not defined here
       name = createUserRequestDTO.name,
       email = createUserRequestDTO.email,
-      hashedPassword = nextHashedPassword,
+      hashedPassword = hashed(createUserRequestDTO.plainPassword),
       timeIntervals = createUserRequestDTO.timeIntervals,
       timeZone = createUserRequestDTO.timeZone,
       isAdmin = isAdmin
+    )
+
+    return ExposedDataCRUD.createUser(
+      name = nextUser.name,
+      email = nextUser.email,
+      hashedPassword = nextUser.hashedPassword,
+      timeIntervals = nextUser.timeIntervals,
+      timeZone = nextUser.timeZone,
+      isAdmin = nextUser.isAdmin
     )
   }
 
@@ -717,7 +726,7 @@ fun Application.statusPagesConfiguration() {
       return@exception when (val root = cause.customRootCause()) {
         is DataHandlingError -> call.respond(HttpStatusCode.InternalServerError, root.message ?: "DataHandlingError")
         is AuthenticationError -> call.respond(HttpStatusCode.Unauthorized, root.message ?: "AuthenticationError")
-        is ValidationError -> call.respond(HttpStatusCode.Unauthorized, root.message ?: "ValidationError")
+        is ValidationError -> call.respond(HttpStatusCode.UnprocessableEntity, root.message ?: "ValidationError")
         is NoPrivilegeError -> call.respond(HttpStatusCode.Forbidden, root.message ?: "NoPrivilegeError")
         is RuleViolatedError -> call.respond(
           HttpStatusCode.UnprocessableEntity,

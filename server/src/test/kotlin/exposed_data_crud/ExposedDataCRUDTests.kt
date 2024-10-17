@@ -1,9 +1,11 @@
 package exposed_data_crud
 
-import com.lucasalfare.flpoint.server.*
+import com.lucasalfare.flpoint.server.ExposedDataCRUD
+import com.lucasalfare.flpoint.server.Users
+import disposeTestingDatabase
 import getSomeUser
+import initTestingDatabase
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.test.AfterTest
@@ -15,29 +17,12 @@ class ExposedDataCRUDTests {
 
   @BeforeTest
   fun setup() {
-    if (!AppDB.isDatabaseConnected()) {
-      AppDB.initialize(
-        jdbcUrl = Constants.DATABASE_H2_URL,
-        jdbcDriverClassName = Constants.DATABASE_H2_DRIVER,
-        username = "",
-        password = "",
-        maximumPoolSize = 5
-      )
-    }
-
-    // assuming above code "instantly" connected to the H2 DB
-    transaction {
-      SchemaUtils.createMissingTablesAndColumns(
-        Users, Points
-      )
-    }
+    initTestingDatabase()
   }
 
   @AfterTest
   fun dispose() {
-    transaction {
-      SchemaUtils.drop(Users, Points)
-    }
+    disposeTestingDatabase()
   }
 
   @Test

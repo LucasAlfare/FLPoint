@@ -1,7 +1,8 @@
-import com.lucasalfare.flpoint.server.TimeInterval
-import com.lucasalfare.flpoint.server.User
+import com.lucasalfare.flpoint.server.*
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
 
 internal const val USER_ADMIN_NAME = "Admin Master"
 internal const val USER_ADMIN_EMAIL = "admin@system.com"
@@ -15,6 +16,32 @@ internal val defaultUserTimeInterval = TimeInterval(
   enter = LocalTime(hour = 8, minute = 0),
   exit = LocalTime(hour = 12, minute = 0)
 )
+
+internal val defaultUserTimeZone = TimeZone.of("America/Sao_Paulo")
+
+internal fun initTestingDatabase() {
+  if (!AppDB.isDatabaseConnected()) {
+    AppDB.initialize(
+      jdbcUrl = Constants.DATABASE_H2_URL,
+      jdbcDriverClassName = Constants.DATABASE_H2_DRIVER,
+      username = "",
+      password = "",
+      maximumPoolSize = 5
+    )
+  }
+
+  transaction {
+    SchemaUtils.createMissingTablesAndColumns(
+      Users, Points
+    )
+  }
+}
+
+internal fun disposeTestingDatabase() {
+  transaction {
+    SchemaUtils.drop(Users, Points)
+  }
+}
 
 fun getSomeAdmin() = User(
   id = 1,
