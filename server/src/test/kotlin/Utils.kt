@@ -1,6 +1,13 @@
 import com.lucasalfare.flpoint.server.*
+import io.ktor.client.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.testing.*
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -18,6 +25,18 @@ internal val defaultUserTimeInterval = TimeInterval(
 )
 
 internal val defaultUserTimeZone = TimeZone.of("America/Sao_Paulo")
+
+internal fun ApplicationTestBuilder.customSetupTestClient(): HttpClient {
+  application {
+    initKtorConfiguration()
+  }
+
+  return createClient {
+    install(ContentNegotiation) {
+      json(Json { isLenient = false })
+    }
+  }
+}
 
 internal fun initTestingDatabase() {
   if (!AppDB.isDatabaseConnected()) {
@@ -43,7 +62,7 @@ internal fun disposeTestingDatabase() {
   }
 }
 
-fun getSomeAdmin() = User(
+internal fun getSomeAdmin() = User(
   id = 1,
   name = USER_ADMIN_NAME,
   email = USER_ADMIN_EMAIL,
@@ -53,7 +72,7 @@ fun getSomeAdmin() = User(
   timeZone = TimeZone.of("America/Sao_Paulo")
 )
 
-fun getSomeUser() = User(
+internal fun getSomeUser() = User(
   id = 1,
   name = USER_NAME,
   email = USER_EMAIL,
@@ -62,3 +81,16 @@ fun getSomeUser() = User(
   timeIntervals = listOf(defaultUserTimeInterval),
   timeZone = TimeZone.of("America/Sao_Paulo")
 )
+
+internal suspend fun signupUserForTest(
+  client: HttpClient,
+  createUserRequestDTO: CreateUserRequestDTO
+) = client.post("/register") {
+  contentType(ContentType.Application.Json)
+  setBody(createUserRequestDTO)
+}
+
+internal suspend fun loginUserForTest(client: HttpClient, credentialsDTO: CredentialsDTO) = client.post("/login") {
+  contentType(ContentType.Application.Json)
+  setBody(credentialsDTO)
+}

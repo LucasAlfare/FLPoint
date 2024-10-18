@@ -10,10 +10,10 @@ import defaultUserTimeInterval
 import defaultUserTimeZone
 import disposeTestingDatabase
 import initTestingDatabase
-import io.ktor.client.*
-import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import loginUserForTest
+import signupUserForTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -34,7 +34,7 @@ class PublicRoutesTests {
   @Test
   fun `test _register route success`() = testApplication {
     val c = customSetupTestClient()
-    val registerResponse = signupUser(
+    val registerResponse = signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -51,7 +51,7 @@ class PublicRoutesTests {
   fun `test _register route failure`() = testApplication {
     val c = customSetupTestClient()
 
-    val registerResponse = signupUser(
+    val registerResponse = signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -70,7 +70,7 @@ class PublicRoutesTests {
     val c = customSetupTestClient()
 
     // first create one
-    signupUser(
+    signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -82,7 +82,7 @@ class PublicRoutesTests {
     )
 
     // try do the same after
-    val registerResponse = signupUser(
+    val registerResponse = signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -101,7 +101,7 @@ class PublicRoutesTests {
     val c = customSetupTestClient()
 
     // first create a user (success)
-    signupUser(
+    signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -113,7 +113,7 @@ class PublicRoutesTests {
     )
 
     // now tries to send credentials to /login route
-    val loginResponse = loginUser(
+    val loginResponse = loginUserForTest(
       client = c,
       credentialsDTO = CredentialsDTO(email = USER_EMAIL, plainPassword = USER_PASS)
     )
@@ -126,7 +126,7 @@ class PublicRoutesTests {
     val c = customSetupTestClient()
 
     // first create a user (success)
-    signupUser(
+    signupUserForTest(
       client = c,
       createUserRequestDTO = CreateUserRequestDTO(
         name = USER_NAME,
@@ -138,24 +138,11 @@ class PublicRoutesTests {
     )
 
     // now tries to send BAD credentials to /login route
-    val loginResponse = loginUser(
+    val loginResponse = loginUserForTest(
       client = c,
       credentialsDTO = CredentialsDTO(email = USER_EMAIL, plainPassword = "BAD pass")
     )
 
     assertEquals(expected = HttpStatusCode.Unauthorized, actual = loginResponse.status)
-  }
-
-  private suspend fun signupUser(
-    client: HttpClient,
-    createUserRequestDTO: CreateUserRequestDTO
-  ) = client.post("/register") {
-    contentType(ContentType.Application.Json)
-    setBody(createUserRequestDTO)
-  }
-
-  private suspend fun loginUser(client: HttpClient, credentialsDTO: CredentialsDTO) = client.post("/login") {
-    contentType(ContentType.Application.Json)
-    setBody(credentialsDTO)
   }
 }

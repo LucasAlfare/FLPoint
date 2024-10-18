@@ -799,7 +799,6 @@ fun Routing.routesHandlers() {
     //<editor-fold desc="USER-ROUTES">
     // used to update current password
     patch("/users/update-password") {
-      // TODO: handle "update password" logic
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val receivedCurrentPlainPassword = call.receive<UpdateUserPasswordRequestDTO>()
       val result = AppUsecases.updateUserPassword(
