@@ -4,11 +4,13 @@ import USER_EMAIL
 import USER_NAME
 import USER_PASS
 import com.lucasalfare.flpoint.server.CreateUserRequestDTO
+import com.lucasalfare.flpoint.server.CredentialsDTO
 import customSetupTestClient
 import defaultUserTimeInterval
 import defaultUserTimeZone
 import disposeTestingDatabase
 import initTestingDatabase
+import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -32,20 +34,16 @@ class PublicRoutesTests {
   @Test
   fun `test _register route success`() = testApplication {
     val c = customSetupTestClient()
-
-    val registerResponse = c.post("/register") {
-      contentType(ContentType.Application.Json)
-      setBody(
-        CreateUserRequestDTO(
-          name = USER_NAME,
-          email = USER_EMAIL,
-          plainPassword = USER_PASS,
-          timeIntervals = listOf(defaultUserTimeInterval),
-          timeZone = defaultUserTimeZone
-        )
+    val registerResponse = signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = listOf(defaultUserTimeInterval),
+        timeZone = defaultUserTimeZone
       )
-    }
-
+    )
     assertEquals(expected = HttpStatusCode.Created, registerResponse.status)
   }
 
@@ -53,18 +51,16 @@ class PublicRoutesTests {
   fun `test _register route failure`() = testApplication {
     val c = customSetupTestClient()
 
-    val registerResponse = c.post("/register") {
-      contentType(ContentType.Application.Json)
-      setBody(
-        CreateUserRequestDTO(
-          name = USER_NAME,
-          email = USER_EMAIL,
-          plainPassword = USER_PASS,
-          timeIntervals = emptyList(),
-          timeZone = defaultUserTimeZone
-        )
+    val registerResponse = signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = emptyList(),
+        timeZone = defaultUserTimeZone
       )
-    }
+    )
 
     assertEquals(expected = HttpStatusCode.UnprocessableEntity, registerResponse.status)
   }
@@ -74,33 +70,92 @@ class PublicRoutesTests {
     val c = customSetupTestClient()
 
     // first create one
-    c.post("/register") {
-      contentType(ContentType.Application.Json)
-      setBody(
-        CreateUserRequestDTO(
-          name = USER_NAME,
-          email = USER_EMAIL,
-          plainPassword = USER_PASS,
-          timeIntervals = listOf(defaultUserTimeInterval),
-          timeZone = defaultUserTimeZone
-        )
+    signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = listOf(defaultUserTimeInterval),
+        timeZone = defaultUserTimeZone
       )
-    }
+    )
 
     // try do the same after
-    val registerResponse = c.post("/register") {
-      contentType(ContentType.Application.Json)
-      setBody(
-        CreateUserRequestDTO(
-          name = USER_NAME,
-          email = USER_EMAIL,
-          plainPassword = USER_PASS,
-          timeIntervals = listOf(defaultUserTimeInterval),
-          timeZone = defaultUserTimeZone
-        )
+    val registerResponse = signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = listOf(defaultUserTimeInterval),
+        timeZone = defaultUserTimeZone
       )
-    }
+    )
 
     assertEquals(expected = HttpStatusCode.InternalServerError, registerResponse.status)
+  }
+
+  @Test
+  fun `test _long route success`() = testApplication {
+    val c = customSetupTestClient()
+
+    // first create a user (success)
+    signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = listOf(defaultUserTimeInterval),
+        timeZone = defaultUserTimeZone
+      )
+    )
+
+    // now tries to send credentials to /login route
+    val loginResponse = loginUser(
+      client = c,
+      credentialsDTO = CredentialsDTO(email = USER_EMAIL, plainPassword = USER_PASS)
+    )
+
+    assertEquals(expected = HttpStatusCode.OK, loginResponse.status)
+  }
+
+  @Test
+  fun `test _long route failure`() = testApplication {
+    val c = customSetupTestClient()
+
+    // first create a user (success)
+    signupUser(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = USER_NAME,
+        email = USER_EMAIL,
+        plainPassword = USER_PASS,
+        timeIntervals = listOf(defaultUserTimeInterval),
+        timeZone = defaultUserTimeZone
+      )
+    )
+
+    // now tries to send BAD credentials to /login route
+    val loginResponse = loginUser(
+      client = c,
+      credentialsDTO = CredentialsDTO(email = USER_EMAIL, plainPassword = "BAD pass")
+    )
+
+    assertEquals(expected = HttpStatusCode.Unauthorized, actual = loginResponse.status)
+  }
+
+  private suspend fun signupUser(
+    client: HttpClient,
+    createUserRequestDTO: CreateUserRequestDTO
+  ) = client.post("/register") {
+    contentType(ContentType.Application.Json)
+    setBody(createUserRequestDTO)
+  }
+
+  private suspend fun loginUser(client: HttpClient, credentialsDTO: CredentialsDTO) = client.post("/login") {
+    contentType(ContentType.Application.Json)
+    setBody(credentialsDTO)
   }
 }

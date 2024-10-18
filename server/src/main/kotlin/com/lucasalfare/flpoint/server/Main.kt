@@ -520,6 +520,11 @@ object AppUsecases {
 
   suspend fun loginUser(credentialsDTO: CredentialsDTO): String = ExposedDataCRUD.getUser(credentialsDTO.email).let {
     if (it == null) throw AuthenticationError("User doesn't exists")
+
+    if (!plainMatchesHashed(credentialsDTO.plainPassword, it.hashedPassword)) {
+      throw AuthenticationError("Bad credentials")
+    }
+
     return@let JwtGenerator.generate(AppJwtClaims(userId = it.id, isAdmin = it.isAdmin))
   }
 
