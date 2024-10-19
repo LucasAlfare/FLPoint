@@ -2,6 +2,7 @@ package routes
 
 import com.lucasalfare.flpoint.server.CreateUserRequestDTO
 import com.lucasalfare.flpoint.server.CredentialsDTO
+import com.lucasalfare.flpoint.server.TimeInterval
 import com.lucasalfare.flpoint.server.UpdateUserPasswordRequestDTO
 import customSetupTestClient
 import disposeTestingDatabase
@@ -11,6 +12,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import kotlinx.datetime.LocalTime
 import loginUserForTest
 import signupUserForTest
 import kotlin.test.AfterTest
@@ -110,7 +112,7 @@ class AuthUserRoutesTests {
   }
 
   @Test
-  fun `test _point route failure`() = testApplication {
+  fun `test _users_point route success`() = testApplication {
     val c = customSetupTestClient()
     val nextBasicUser = getSomeUser()
 
@@ -136,5 +138,79 @@ class AuthUserRoutesTests {
     }
 
     assertEquals(expected = HttpStatusCode.Created, actual = createPointResponse.status)
+  }
+
+  @Test
+  fun `test _users_point route out of time interval failure`() = testApplication {
+    val c = customSetupTestClient()
+    val nextBasicUser = getSomeUser()
+
+    // we prepare testing user with a different time interval
+    // TODO: we need change this values to any time different of the time that the test is running!
+    nextBasicUser.timeIntervals = listOf(
+      TimeInterval(
+        enter = LocalTime(hour = 8, minute = 0),
+        exit = LocalTime(hour = 12, minute = 0)
+      )
+    )
+
+    signupUserForTest(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = nextBasicUser.name,
+        email = nextBasicUser.email,
+        plainPassword = nextBasicUser.hashedPassword,
+        timeIntervals = nextBasicUser.timeIntervals,
+        timeZone = nextBasicUser.timeZone,
+      )
+    )
+
+    val loginResponse = loginUserForTest(
+      client = c,
+      credentialsDTO = CredentialsDTO(nextBasicUser.email, nextBasicUser.hashedPassword)
+    )
+
+    val receivedJwt = loginResponse.bodyAsText()
+    val createPointResponse = c.post("/users/point") {
+      bearerAuth(receivedJwt)
+    }
+
+    assertEquals(expected = HttpStatusCode.UnprocessableEntity, actual = createPointResponse.status)
+  }
+
+  @Test
+  fun `test _users_point route too many point creation failure`() = testApplication {
+    val c = customSetupTestClient()
+    val nextBasicUser = getSomeUser()
+
+    signupUserForTest(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = nextBasicUser.name,
+        email = nextBasicUser.email,
+        plainPassword = nextBasicUser.hashedPassword,
+        timeIntervals = nextBasicUser.timeIntervals,
+        timeZone = nextBasicUser.timeZone,
+      )
+    )
+
+    val loginResponse = loginUserForTest(
+      client = c,
+      credentialsDTO = CredentialsDTO(nextBasicUser.email, nextBasicUser.hashedPassword)
+    )
+
+    val receivedJwt = loginResponse.bodyAsText()
+
+    // we try to create a point
+    c.post("/users/point") {
+      bearerAuth(receivedJwt)
+    }
+
+    // after we try to create other!
+    val createPointResponse = c.post("/users/point") {
+      bearerAuth(receivedJwt)
+    }
+
+    assertEquals(expected = HttpStatusCode.UnprocessableEntity, actual = createPointResponse.status)
   }
 }

@@ -193,7 +193,7 @@ data class User(
   val name: String,
   val email: String,
   val hashedPassword: String,
-  val timeIntervals: List<TimeInterval>,
+  var timeIntervals: List<TimeInterval>,
   val timeZone: TimeZone,
   val isAdmin: Boolean
 ) {
