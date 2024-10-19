@@ -41,6 +41,8 @@ import kotlin.time.Duration.Companion.minutes
 
 //<editor-fold desc="EXTENSIONS-SECTION">
 // TODO: check if was found a cyclic reference to avoid infinite loops
+// TODO: probably can be done by indexing the references in a list and
+// TODO: always checking the indexes for existence
 fun Throwable.customRootCause(): Throwable {
   var current = this
   while (true) {
@@ -52,12 +54,12 @@ fun Throwable.customRootCause(): Throwable {
 
 //<editor-fold desc="PASS-HASHING-SECTION">
 fun hashed(plain: String): String {
-  if (plain.isEmpty()) throw IllegalArgumentException("Password cannot be empty.")
+  if (plain.isEmpty()) throw RuleViolatedError("Password cannot be empty.")
   return BCrypt.hashpw(plain, BCrypt.gensalt())
 }
 
 fun plainMatchesHashed(plain: String, hashed: String): Boolean {
-  if (hashed.isEmpty()) throw IllegalArgumentException("Hashed password cannot be empty.")
+  if (hashed.isEmpty()) throw RuleViolatedError("Hashed password cannot be empty.")
   return BCrypt.checkpw(plain, hashed)
 }
 //</editor-fold>
@@ -142,7 +144,7 @@ data class TimeInterval(
   /*
   we are keeping some string-parsing functions to avoid using extra tables
   for time intervals and to avoid using "array" column type, once it is
-  only compatible with Postgre and H2 dialects.
+  only compatible with Postgres and H2 dialects.
 
  Look "Users" table in the Exposed Schema to see the [timeIntervalsStringList]
  column.
@@ -199,6 +201,7 @@ data class User(
 ) {
 
   init {
+    // we don't allow a standard user without any time interval!
     if (!isAdmin && timeIntervals.isEmpty())
       throw ValidationError("A non-admin user must have at lease 1 time interval!")
   }
@@ -323,6 +326,14 @@ object Users : IntIdTable("Users") {
   val name = varchar("name", 255)
   val email = varchar("email", 255).uniqueIndex()
   val hashedPassword = varchar("hashed_password", 255)
+
+  /**
+   * This column is stored as string only due to avoid extra tables
+   * or using a "custom" array column.
+   *
+   * This string is compiled and decompiled from a [TimeInterval] list
+   * through the static/companion functions in the [TimeInterval] class.
+   */
   val timeIntervalsStringList = text("time_intervals")
   val timeZone = text("time_zone")
   val isAdmin = bool("is_admin").default(false)
@@ -335,6 +346,8 @@ object Points : IntIdTable("Points") {
 //</editor-fold>
 
 //<editor-fold desc="EXPOSED-DATA-CRUD">
+// as we are using only this [DataCRUD] impl, it is an object instead of a
+// class, but is an object just for convenience.
 object ExposedDataCRUD : DataCRUD {
 
   override suspend fun createUser(
@@ -627,6 +640,11 @@ object AppDB {
       queryCodeBlock()
     }
 
+  /**
+   * This is a helper function to automatically tries perform the
+   * query block callback and throw the defined throwable if some error
+   * was fired.
+   */
   suspend fun <T> safeQuery(
     onFailureThrowable: Throwable? = null,
     queryFunction: suspend () -> T
@@ -728,6 +746,15 @@ fun Application.authenticationConfiguration() {
   }
 }
 
+/**
+ * Status pages plugin help us to keep track of all error fired in the
+ * application flow. This is useful to make the entities of the app
+ * throw errors instead returning then. This is nice due we have a
+ * limited kind of errors, and they can be caught here, in a centered
+ * place.
+ *
+ * TODO: improve kind of errors and messages.
+ */
 fun Application.statusPagesConfiguration() {
   install(StatusPages) {
     exception<Throwable> { call, cause ->
