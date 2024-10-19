@@ -781,7 +781,7 @@ fun Application.statusPagesConfiguration() {
   }
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.handleAsAuthenticatedAdmin(
+suspend fun PipelineContext<Unit, ApplicationCall>.handleAsAuthorizedAdmin(
   onSucceedAdminVerification: suspend () -> Unit = {}
 ) {
   val principal = call.principal<JWTPrincipal>()
@@ -859,43 +859,43 @@ fun Routing.routesHandlers() {
     //<editor-fold desc="ADMIN-ONLY-ROUTES">
     // admin health route
     get("/admin/health") {
-      return@get handleAsAuthenticatedAdmin {
+      return@get handleAsAuthorizedAdmin {
         call.respond(HttpStatusCode.OK)
       }
     }
 
     // used to get all database users
     get("/admin/users") {
-      return@get handleAsAuthenticatedAdmin {
+      return@get handleAsAuthorizedAdmin {
         val result = AppUsecases.getAllAppUsers()
-        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
+        return@handleAsAuthorizedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
     // used to update the time intervals of the {id} user
     patch("/admin/users/{id}/update-time-intervals") {
-      return@patch handleAsAuthenticatedAdmin {
+      return@patch handleAsAuthorizedAdmin {
         val userId = call.parameters["id"] ?: throw AppError("Missing path parameter user ID")
         val receivedTimeIntervals = call.receive<List<TimeInterval>>()
         val result = AppUsecases.updateUserTimeIntervals(userId.toInt(), receivedTimeIntervals)
-        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
+        return@handleAsAuthorizedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
     // used to delete the {id} user
     delete("/admin/users/{id}") {
-      return@delete handleAsAuthenticatedAdmin {
+      return@delete handleAsAuthorizedAdmin {
         val userId = call.parameters["id"] ?: throw AppError("Missing user ID")
         val result = AppUsecases.deleteUser(userId.toInt())
-        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
+        return@handleAsAuthorizedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
 
     // used to retrieve all the points of the database
     get("/admin/points") {
-      return@get handleAsAuthenticatedAdmin {
+      return@get handleAsAuthorizedAdmin {
         val result = AppUsecases.getAllAppPoints()
-        return@handleAsAuthenticatedAdmin call.respond(HttpStatusCode.OK, result)
+        return@handleAsAuthorizedAdmin call.respond(HttpStatusCode.OK, result)
       }
     }
     //</editor-fold>
