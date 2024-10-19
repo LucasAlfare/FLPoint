@@ -232,6 +232,7 @@ class AuthUserRoutesTests {
 
     val receivedJwt = loginResponse.bodyAsText()
 
+    // just create the point here
     c.post("/users/point") {
       bearerAuth(receivedJwt)
     }
