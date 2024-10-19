@@ -5,11 +5,14 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlin.time.Duration.Companion.hours
 
 internal const val USER_ADMIN_NAME = "Admin Master"
 internal const val USER_ADMIN_EMAIL = "admin@system.com"
@@ -19,12 +22,17 @@ internal const val USER_NAME = "User Common"
 internal const val USER_EMAIL = "user@common.com"
 internal const val USER_PASS = "user12345"
 
-internal val defaultUserTimeInterval = TimeInterval(
-  enter = LocalTime(hour = 8, minute = 0),
-  exit = LocalTime(hour = 12, minute = 0)
-)
-
 internal val defaultUserTimeZone = TimeZone.of("America/Sao_Paulo")
+
+internal fun getDefaultUserTimeInterval(): TimeInterval {
+  val now = Clock.System.now()
+  val nextEnter = (now - 2.hours).toLocalDateTime(defaultUserTimeZone)
+  val nextExit = (now + 2.hours).toLocalDateTime(defaultUserTimeZone)
+  return TimeInterval(
+    enter = nextEnter.time,
+    exit = nextExit.time
+  )
+}
 
 internal fun ApplicationTestBuilder.customSetupTestClient(): HttpClient {
   application {
@@ -78,7 +86,7 @@ internal fun getSomeUser() = User(
   email = USER_EMAIL,
   hashedPassword = USER_PASS,
   isAdmin = false,
-  timeIntervals = listOf(defaultUserTimeInterval),
+  timeIntervals = listOf(getDefaultUserTimeInterval()),
   timeZone = TimeZone.of("America/Sao_Paulo")
 )
 

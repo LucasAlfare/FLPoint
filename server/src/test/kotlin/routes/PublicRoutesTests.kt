@@ -6,9 +6,9 @@ import USER_PASS
 import com.lucasalfare.flpoint.server.CreateUserRequestDTO
 import com.lucasalfare.flpoint.server.CredentialsDTO
 import customSetupTestClient
-import defaultUserTimeInterval
 import defaultUserTimeZone
 import disposeTestingDatabase
+import getDefaultUserTimeInterval
 import initTestingDatabase
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -40,7 +40,7 @@ class PublicRoutesTests {
         name = USER_NAME,
         email = USER_EMAIL,
         plainPassword = USER_PASS,
-        timeIntervals = listOf(defaultUserTimeInterval),
+        timeIntervals = listOf(getDefaultUserTimeInterval()),
         timeZone = defaultUserTimeZone
       )
     )
@@ -76,7 +76,7 @@ class PublicRoutesTests {
         name = USER_NAME,
         email = USER_EMAIL,
         plainPassword = USER_PASS,
-        timeIntervals = listOf(defaultUserTimeInterval),
+        timeIntervals = listOf(getDefaultUserTimeInterval()),
         timeZone = defaultUserTimeZone
       )
     )
@@ -88,7 +88,7 @@ class PublicRoutesTests {
         name = USER_NAME,
         email = USER_EMAIL,
         plainPassword = USER_PASS,
-        timeIntervals = listOf(defaultUserTimeInterval),
+        timeIntervals = listOf(getDefaultUserTimeInterval()),
         timeZone = defaultUserTimeZone
       )
     )
@@ -107,7 +107,7 @@ class PublicRoutesTests {
         name = USER_NAME,
         email = USER_EMAIL,
         plainPassword = USER_PASS,
-        timeIntervals = listOf(defaultUserTimeInterval),
+        timeIntervals = listOf(getDefaultUserTimeInterval()),
         timeZone = defaultUserTimeZone
       )
     )
@@ -132,7 +132,7 @@ class PublicRoutesTests {
         name = USER_NAME,
         email = USER_EMAIL,
         plainPassword = USER_PASS,
-        timeIntervals = listOf(defaultUserTimeInterval),
+        timeIntervals = listOf(getDefaultUserTimeInterval()),
         timeZone = defaultUserTimeZone
       )
     )

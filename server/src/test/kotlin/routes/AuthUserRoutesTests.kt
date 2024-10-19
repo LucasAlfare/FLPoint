@@ -108,4 +108,33 @@ class AuthUserRoutesTests {
 
     assertEquals(expected = HttpStatusCode.Unauthorized, actual = updatePasswordResponse.status)
   }
+
+  @Test
+  fun `test _point route failure`() = testApplication {
+    val c = customSetupTestClient()
+    val nextBasicUser = getSomeUser()
+
+    signupUserForTest(
+      client = c,
+      createUserRequestDTO = CreateUserRequestDTO(
+        name = nextBasicUser.name,
+        email = nextBasicUser.email,
+        plainPassword = nextBasicUser.hashedPassword,
+        timeIntervals = nextBasicUser.timeIntervals,
+        timeZone = nextBasicUser.timeZone,
+      )
+    )
+
+    val loginResponse = loginUserForTest(
+      client = c,
+      credentialsDTO = CredentialsDTO(nextBasicUser.email, nextBasicUser.hashedPassword)
+    )
+
+    val receivedJwt = loginResponse.bodyAsText()
+    val createPointResponse = c.post("/users/point") {
+      bearerAuth(receivedJwt)
+    }
+
+    assertEquals(expected = HttpStatusCode.Created, actual = createPointResponse.status)
+  }
 }

@@ -538,18 +538,21 @@ object AppUsecases {
       }
 
       // we assume the list can not be null, it can only be empty, because a user with [userId] was verified above
-      val userInstants = ExposedDataCRUD.getPointsByUserId(it.id)!!
-      if (userInstants.isNotEmpty()) {
-        val lastInstant = userInstants.last().instant
-        if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
-          throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
+      return ExposedDataCRUD.getPointsByUserId(it.id).let { instants ->
+        if (instants != null) {
+          if (instants.isNotEmpty()) {
+            val lastInstant = instants.last().instant
+            if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
+              throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
+            }
+          }
         }
-      }
 
-      return ExposedDataCRUD.createPoint(
-        relatedUserId = userId,
-        instant = generatedInstant
-      )
+        ExposedDataCRUD.createPoint(
+          relatedUserId = userId,
+          instant = generatedInstant
+        )
+      }
     }
   }
 
@@ -811,14 +814,14 @@ fun Routing.routesHandlers() {
     }
 
     // used to create point
-    post("/point") {
+    post("/users/point") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.doPoint(claims.userId)
       return@post call.respond(HttpStatusCode.Created, result)
     }
 
     // Route for user getting only his own points
-    get("/points") {
+    get("/users/points") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.getUserPoints(claims.userId)
         ?: return@get call.respond(HttpStatusCode.NotFound, "No points found for requested user ID")
