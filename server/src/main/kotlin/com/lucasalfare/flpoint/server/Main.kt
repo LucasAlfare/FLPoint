@@ -358,11 +358,17 @@ object ExposedDataCRUD : DataCRUD {
     timeZone: TimeZone,
     isAdmin: Boolean
   ): Int = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Could not to create user")) {
+    val nextTimeIntervals = if (isAdmin) {
+      ""
+    } else {
+      TimeInterval.listToString(timeIntervals)
+    }
+
     Users.insertAndGetId {
       it[Users.name] = name
       it[Users.email] = email
       it[Users.hashedPassword] = hashedPassword
-      it[Users.timeIntervalsStringList] = TimeInterval.listToString(timeIntervals)
+      it[Users.timeIntervalsStringList] = nextTimeIntervals
       it[Users.timeZone] = timeZone.toString()
       it[Users.isAdmin] = isAdmin
     }.value
@@ -372,15 +378,21 @@ object ExposedDataCRUD : DataCRUD {
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error selecting user from database")) {
       Users.selectAll().where { Users.id eq id }.singleOrNull().let {
         if (it == null) null
-        else User(
-          id = it[Users.id].value,
-          name = it[Users.name],
-          email = it[Users.email],
-          hashedPassword = it[Users.hashedPassword],
-          timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
-          timeZone = TimeZone.of(it[Users.timeZone]),
-          isAdmin = it[Users.isAdmin]
-        )
+        else {
+          val nextTimeIntervals =
+            if (it[Users.isAdmin]) emptyList()
+            else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
+
+          User(
+            id = it[Users.id].value,
+            name = it[Users.name],
+            email = it[Users.email],
+            hashedPassword = it[Users.hashedPassword],
+            timeIntervals = nextTimeIntervals,
+            timeZone = TimeZone.of(it[Users.timeZone]),
+            isAdmin = it[Users.isAdmin]
+          )
+        }
       }
     }
 
@@ -388,15 +400,21 @@ object ExposedDataCRUD : DataCRUD {
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error selecting user from database")) {
       Users.selectAll().where { Users.email eq email }.singleOrNull().let {
         if (it == null) null
-        else User(
-          id = it[Users.id].value,
-          name = it[Users.name],
-          email = it[Users.email],
-          hashedPassword = it[Users.hashedPassword],
-          timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
-          timeZone = TimeZone.of(it[Users.timeZone]),
-          isAdmin = it[Users.isAdmin]
-        )
+        else {
+          val nextTimeIntervals =
+            if (it[Users.isAdmin]) emptyList()
+            else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
+
+          User(
+            id = it[Users.id].value,
+            name = it[Users.name],
+            email = it[Users.email],
+            hashedPassword = it[Users.hashedPassword],
+            timeIntervals = nextTimeIntervals,
+            timeZone = TimeZone.of(it[Users.timeZone]),
+            isAdmin = it[Users.isAdmin]
+          )
+        }
       }
     }
 
@@ -404,12 +422,16 @@ object ExposedDataCRUD : DataCRUD {
     onFailureThrowable = DataHandlingError("Error trying to retrieve all application users")
   ) {
     Users.selectAll().map {
+      val nextTimeIntervals =
+        if (it[Users.isAdmin]) emptyList()
+        else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
+
       User(
         id = it[Users.id].value,
         name = it[Users.name],
         email = it[Users.email],
         hashedPassword = it[Users.hashedPassword],
-        timeIntervals = TimeInterval.fromStringList(it[Users.timeIntervalsStringList]),
+        timeIntervals = nextTimeIntervals,
         timeZone = TimeZone.of(it[Users.timeZone]),
         isAdmin = it[Users.isAdmin]
       )
@@ -773,7 +795,7 @@ fun Application.statusPagesConfiguration() {
           if (cause is BadRequestException) {
             call.respond(HttpStatusCode.BadRequest, cause.message ?: "BadRequestException")
           } else {
-            call.respond(HttpStatusCode.InternalServerError, "InternalServerError")
+            call.respond(HttpStatusCode.InternalServerError, cause.message ?: "InternalServerError")
           }
         }
       }
