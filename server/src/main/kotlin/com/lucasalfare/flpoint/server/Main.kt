@@ -137,7 +137,7 @@ data class TimeInterval(
 ) {
 
   init {
-    if (exit < enter) throw ValidationError("Exit time is earlier than Enter time!")
+    if (exit < enter) throw ValidationError("Exit time is earlier than Enter time! Look, enter=[$enter], exit[$exit]")
     // TODO: validate if the difference between enter/exit is less/higher than something
   }
 

@@ -170,6 +170,8 @@ class AuthUserRoutesTests {
       bearerAuth(receivedJwt)
     }
 
+    println(createPointResponse.bodyAsText())
+
     assertEquals(expected = HttpStatusCode.UnprocessableEntity, actual = createPointResponse.status)
   }
 

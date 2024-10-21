@@ -6,7 +6,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
@@ -24,6 +23,15 @@ internal const val USER_PASS = "user12345"
 
 internal val defaultUserTimeZone = TimeZone.of("America/Sao_Paulo")
 
+/*
+TODO: solve this:
+We have a problem.
+If we run this code, eg, at "22h" (night) we end with intervals like
+
+enter=20h and exit=00h
+
+knowing that, exit will always be "earlier"
+*/
 internal fun getDefaultUserTimeInterval(): TimeInterval {
   val now = Clock.System.now()
   val nextEnter = (now - 2.hours).toLocalDateTime(defaultUserTimeZone)
