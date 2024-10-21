@@ -1,5 +1,3 @@
-Claro! Aqui está a documentação em Markdown puro:
-
 # API Documentation for Electronic Point System
 
 ## Public Routes
