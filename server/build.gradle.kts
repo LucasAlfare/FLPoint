@@ -19,6 +19,9 @@ dependencies {
   // status pages
   implementation("io.ktor:ktor-server-status-pages:$ktor_version")
 
+  // CORS
+  implementation("io.ktor:ktor-server-cors:$ktor_version")
+
   // dependências para gerenciamento de JWT
   implementation("io.ktor:ktor-server-auth:$ktor_version")
   implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
@@ -46,6 +49,12 @@ dependencies {
   TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
    */
   implementation("org.xerial:sqlite-jdbc:3.45.2.0")
+
+  /*
+  Database.connect("jdbc:h2:mem:regular", "org.h2.Driver")
+   */
+  implementation("com.h2database:h2:2.2.224")
+
   implementation("com.zaxxer:HikariCP:5.1.0")
 
   // isso aqui serve apenas para gerar os logs da engine do servidor...
@@ -54,9 +63,6 @@ dependencies {
   // para testes unitários...
   testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
   testImplementation(kotlin("test"))
-
-  // misc, provavelmente melhor lugar para isso é onde contiver clients....
-  implementation("io.ktor:ktor-server-cors:$ktor_version")
 }
 
 kotlin {
