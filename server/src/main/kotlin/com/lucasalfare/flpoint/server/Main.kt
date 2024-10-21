@@ -21,6 +21,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -817,10 +818,23 @@ fun Application.serializationConfiguration() {
   install(ContentNegotiation) { json(Json { isLenient = false }) }
 }
 
+fun Application.configureCORS() {
+  install(CORS) {
+    allowHeader(HttpHeaders.Authorization)
+    allowCredentials = true //may be useful
+    allowNonSimpleContentTypes = true //may be useful
+    listOf(HttpMethod.Patch, HttpMethod.Get, HttpMethod.Post, HttpMethod.Delete).forEach {
+      allowMethod(it)
+    }
+    anyHost()
+  }
+}
+
 fun Application.initKtorConfiguration() {
   authenticationConfiguration()
   statusPagesConfiguration()
   serializationConfiguration()
+  configureCORS()
   routing { routesHandlers() }
 }
 //</editor-fold>

@@ -19,6 +19,9 @@ dependencies {
   // status pages
   implementation("io.ktor:ktor-server-status-pages:$ktor_version")
 
+  // CORS
+  implementation("io.ktor:ktor-server-cors:$ktor_version")
+
   // dependências para gerenciamento de JWT
   implementation("io.ktor:ktor-server-auth:$ktor_version")
   implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
@@ -60,9 +63,6 @@ dependencies {
   // para testes unitários...
   testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
   testImplementation(kotlin("test"))
-
-  // misc, provavelmente melhor lugar para isso é onde contiver clients....
-  implementation("io.ktor:ktor-server-cors:$ktor_version")
 }
 
 kotlin {
