@@ -845,13 +845,6 @@ fun Routing.routesHandlers() {
   // global root health route
   get("/health") { call.respondText("Hello from Kotlin/Ktor API!") }
 
-  // used for signup an user
-  post("/register") {
-    val dto = call.receive<CreateUserRequestDTO>()
-    val result = AppUsecases.signupUser(dto)
-    return@post call.respond(status = HttpStatusCode.Created, message = result)
-  }
-
   // used for logging in a existing user
   post("/login") {
     val dto = call.receive<CredentialsDTO>()
@@ -898,6 +891,13 @@ fun Routing.routesHandlers() {
       return@get handleAsAuthorizedAdmin {
         call.respond(HttpStatusCode.OK)
       }
+    }
+
+    // used for signup an user
+    post("/admin/register") {
+      val dto = call.receive<CreateUserRequestDTO>()
+      val result = AppUsecases.signupUser(dto)
+      return@post call.respond(status = HttpStatusCode.Created, message = result)
     }
 
     // used to get all database users
