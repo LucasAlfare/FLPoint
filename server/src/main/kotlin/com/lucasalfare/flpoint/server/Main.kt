@@ -121,6 +121,7 @@ class Constants {
 
     // in memory H2, for testing
 //    const val DATABASE_H2_URL = "jdbc:h2:mem:regular"
+//    const val DATABASE_H2_URL = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;"
     const val DATABASE_H2_URL = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;"
     const val DATABASE_H2_DRIVER = "org.h2.Driver"
   }
@@ -367,31 +368,35 @@ object ExposedDataCRUD : DataCRUD {
     timeIntervals: List<TimeInterval>,
     timeZone: TimeZone,
     isAdmin: Boolean
-  ): User = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Could not to create user")) {
+  ): User = AppDB.safeQuery(
+    onFailureThrowable = DataHandlingError("Could not to create user")
+  ) {
     val nextTimeIntervals = if (isAdmin) {
       ""
     } else {
       TimeInterval.listToString(timeIntervals)
     }
 
-    Users.insertReturning {
+    // TODO: "insertReturning" is not supported by H2, but others can do. In future implement for both.
+
+    val id = Users.insertAndGetId {
       it[Users.name] = name
       it[Users.email] = email
       it[Users.hashedPassword] = hashedPassword
       it[Users.timeIntervalsStringList] = nextTimeIntervals
       it[Users.timeZone] = timeZone.toString()
       it[Users.isAdmin] = isAdmin
-    }.single().let {
-      User(
-        id = it[Users.id].value,
-        name = it[Users.name],
-        email = it[Users.email],
-        hashedPassword = it[Users.hashedPassword],
-        timeIntervals = timeIntervals,
-        timeZone = TimeZone.of(it[Users.timeZone]),
-        isAdmin = it[Users.isAdmin]
-      )
-    }
+    }.value
+
+    User(
+      id = id,
+      name = name,
+      email = email,
+      hashedPassword = hashedPassword,
+      timeIntervals = timeIntervals,
+      timeZone = timeZone,
+      isAdmin = isAdmin
+    )
   }
 
   override suspend fun getUser(id: Int): User? =
@@ -553,15 +558,17 @@ object ExposedDataCRUD : DataCRUD {
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): User {
-    val nextUser = User(
-      id = -1, // not defined here
-      name = createUserRequestDTO.name,
-      email = createUserRequestDTO.email,
-      hashedPassword = hashed(createUserRequestDTO.plainPassword),
-      timeIntervals = createUserRequestDTO.timeIntervals,
-      timeZone = createUserRequestDTO.timeZone,
-      isAdmin = isAdmin
-    )
+    val nextUser = runCatching {
+      User(
+        id = -1, // not defined here
+        name = createUserRequestDTO.name,
+        email = createUserRequestDTO.email,
+        hashedPassword = hashed(createUserRequestDTO.plainPassword),
+        timeIntervals = createUserRequestDTO.timeIntervals,
+        timeZone = createUserRequestDTO.timeZone,
+        isAdmin = isAdmin
+      )
+    }.getOrThrow()
 
     return ExposedDataCRUD.createUser(
       name = nextUser.name,
@@ -698,7 +705,10 @@ object AppDB {
     try {
       queryFunction()
     } catch (e: Exception) {
-      if (onFailureThrowable == null) throw Throwable("general error")
+      // always debug the error in server side
+      e.printStackTrace()
+
+      if (onFailureThrowable == null) throw Throwable("General error -> [$e]")
       else throw onFailureThrowable
     }
   }
@@ -989,6 +999,8 @@ fun main() {
           isAdmin = true
         )
       }
+    }.onSuccess {
+      println("Admin user was created!")
     }.onFailure {
       println("Admin seems to be already created. The related error: [${it.message}]")
     }
