@@ -53,7 +53,7 @@ dependencies {
   /*
   Database.connect("jdbc:h2:mem:regular", "org.h2.Driver")
    */
-  implementation("com.h2database:h2:2.2.224")
+  implementation("com.h2database:h2:2.3.232")
 
   implementation("com.zaxxer:HikariCP:5.1.0")
 
