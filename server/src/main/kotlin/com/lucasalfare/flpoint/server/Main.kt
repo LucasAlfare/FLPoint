@@ -19,6 +19,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
@@ -28,6 +30,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -286,7 +289,7 @@ interface DataCRUD {
     timeIntervals: List<TimeInterval>,
     timeZone: TimeZone,
     isAdmin: Boolean
-  ): Int
+  ): User
 
   suspend fun getUser(id: Int): User?
 
@@ -358,21 +361,31 @@ object ExposedDataCRUD : DataCRUD {
     timeIntervals: List<TimeInterval>,
     timeZone: TimeZone,
     isAdmin: Boolean
-  ): Int = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Could not to create user")) {
+  ): User = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Could not to create user")) {
     val nextTimeIntervals = if (isAdmin) {
       ""
     } else {
       TimeInterval.listToString(timeIntervals)
     }
 
-    Users.insertAndGetId {
+    Users.insertReturning {
       it[Users.name] = name
       it[Users.email] = email
       it[Users.hashedPassword] = hashedPassword
       it[Users.timeIntervalsStringList] = nextTimeIntervals
       it[Users.timeZone] = timeZone.toString()
       it[Users.isAdmin] = isAdmin
-    }.value
+    }.single().let {
+      User(
+        id = it[Users.id].value,
+        name = it[Users.name],
+        email = it[Users.email],
+        hashedPassword = it[Users.hashedPassword],
+        timeIntervals = timeIntervals,
+        timeZone = TimeZone.of(it[Users.timeZone]),
+        isAdmin = it[Users.isAdmin]
+      )
+    }
   }
 
   override suspend fun getUser(id: Int): User? =
@@ -533,7 +546,7 @@ object ExposedDataCRUD : DataCRUD {
 
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
-  suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): Int {
+  suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): UserDTO {
     val nextUser = User(
       id = -1, // not defined here
       name = createUserRequestDTO.name,
@@ -551,7 +564,7 @@ object AppUsecases {
       timeIntervals = nextUser.timeIntervals,
       timeZone = nextUser.timeZone,
       isAdmin = nextUser.isAdmin
-    )
+    ).toUserDto()
   }
 
   suspend fun loginUser(credentialsDTO: CredentialsDTO): String = ExposedDataCRUD.getUser(credentialsDTO.email).let {
@@ -939,3 +952,37 @@ fun Routing.routesHandlers() {
   //</editor-fold>
 }
 //</editor-fold>
+
+fun main() {
+  AppDB.initialize(
+    jdbcUrl = Constants.DATABASE_H2_URL,
+    jdbcDriverClassName = Constants.DATABASE_H2_DRIVER,
+    username = "",
+    password = "",
+    maximumPoolSize = 5
+  ) {
+    SchemaUtils.createMissingTablesAndColumns(Users, Points)
+
+    runCatching {
+      runBlocking {
+        // We should to move these hardcoded strings to ENV
+        AppUsecases.signupUser(
+          createUserRequestDTO = CreateUserRequestDTO(
+            name = "Francisco Lucas",
+            email = "fl_admin@system.com",
+            plainPassword = "123456",
+            timeIntervals = emptyList(),
+            timeZone = TimeZone.of("America/Sao_Paulo")
+          ),
+          isAdmin = true
+        )
+      }
+    }.onFailure {
+      println("Admin seems to be already created. The related error: [${it.message}]")
+    }
+  }
+
+  embeddedServer(Netty, 7171) {
+    initKtorConfiguration()
+  }.start(true)
+}
