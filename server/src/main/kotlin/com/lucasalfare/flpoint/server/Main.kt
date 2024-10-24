@@ -254,6 +254,12 @@ data class UpdateUserPasswordRequestDTO(
 }
 
 @Serializable
+data class LoginResponseDTO(
+  val jwt: String,
+  val userDTO: UserDTO
+)
+
+@Serializable
 data class CredentialsDTO(
   val email: String,
   val plainPassword: String
@@ -546,7 +552,7 @@ object ExposedDataCRUD : DataCRUD {
 
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
-  suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): UserDTO {
+  suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): User {
     val nextUser = User(
       id = -1, // not defined here
       name = createUserRequestDTO.name,
@@ -564,18 +570,22 @@ object AppUsecases {
       timeIntervals = nextUser.timeIntervals,
       timeZone = nextUser.timeZone,
       isAdmin = nextUser.isAdmin
-    ).toUserDto()
+    )
   }
 
-  suspend fun loginUser(credentialsDTO: CredentialsDTO): String = ExposedDataCRUD.getUser(credentialsDTO.email).let {
-    if (it == null) throw AuthenticationError("User doesn't exists")
+  suspend fun loginUser(credentialsDTO: CredentialsDTO): LoginResponseDTO =
+    ExposedDataCRUD.getUser(credentialsDTO.email).let {
+      if (it == null) throw AuthenticationError("User doesn't exists")
 
-    if (!plainMatchesHashed(credentialsDTO.plainPassword, it.hashedPassword)) {
-      throw AuthenticationError("Bad credentials")
+      if (!plainMatchesHashed(credentialsDTO.plainPassword, it.hashedPassword)) {
+        throw AuthenticationError("Bad credentials")
+      }
+
+      LoginResponseDTO(
+        jwt = JwtGenerator.generate(AppJwtClaims(userId = it.id, isAdmin = it.isAdmin)),
+        userDTO = it.toUserDto()
+      )
     }
-
-    return@let JwtGenerator.generate(AppJwtClaims(userId = it.id, isAdmin = it.isAdmin))
-  }
 
   suspend fun doPoint(userId: Int): Int {
     ExposedDataCRUD.getUser(userId).let {
@@ -954,6 +964,7 @@ fun Routing.routesHandlers() {
 //</editor-fold>
 
 fun main() {
+  // init/connect database
   AppDB.initialize(
     jdbcUrl = Constants.DATABASE_H2_URL,
     jdbcDriverClassName = Constants.DATABASE_H2_DRIVER,
@@ -963,6 +974,7 @@ fun main() {
   ) {
     SchemaUtils.createMissingTablesAndColumns(Users, Points)
 
+    // always to try to create admin
     runCatching {
       runBlocking {
         // We should to move these hardcoded strings to ENV
