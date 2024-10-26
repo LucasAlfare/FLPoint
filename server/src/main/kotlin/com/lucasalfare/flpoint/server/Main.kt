@@ -874,6 +874,10 @@ fun Application.initKtorConfiguration() {
 //</editor-fold>
 
 //<editor-fold desc="KTOR-ROUTES-HANDLERS-SECTION">
+// TODO: implement "logout" logic by using blacklist of JWTs.
+// TODO: always an endpoint "logout" was called, add the JWT
+// TODO: to the blacklist. Then always a request is made,
+// TODO: check if the jwt is in the blacklist, if yes, refuse
 fun Routing.routesHandlers() {
   //<editor-fold desc="PUBLIC-ROUTES">
   // global root health route
@@ -1019,7 +1023,7 @@ fun main() {
     }.onSuccess {
       println("Admin user was created!")
     }.onFailure {
-      println("Admin seems to be already created. The related error: [${it.message}]")
+      println("An error occurred during the admin creation: [${it.message}]")
     }
   }
 
