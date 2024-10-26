@@ -69,6 +69,8 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 //</editor-fold>
 
 //<editor-fold desc="RULES-SECTION">
+
+// TODO: this function still not correctly working
 fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
   // we check the instant as a local date time in the stored user TZ
   val checkLocal = check.toLocalDateTime(user.timeZone)
@@ -322,7 +324,7 @@ interface DataCRUD {
 
   suspend fun getPoint(id: Int): Point?
 
-  suspend fun getPointsByUserId(userId: Int): List<Point>?
+  suspend fun getPointsByUserId(userId: Int): List<Point>
 
   suspend fun getAllPoints(): List<Point>
 
@@ -515,7 +517,7 @@ object ExposedDataCRUD : DataCRUD {
       }
     }
 
-  override suspend fun getPointsByUserId(userId: Int): List<Point>? =
+  override suspend fun getPointsByUserId(userId: Int): List<Point> =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible select points by the desired user ID")) {
       Points
         .selectAll()
@@ -527,7 +529,7 @@ object ExposedDataCRUD : DataCRUD {
             instant = it[Points.instant]
           )
         }.let {
-          it.ifEmpty { null }
+          it.ifEmpty { emptyList() }
         }
     }
 
@@ -558,7 +560,7 @@ object ExposedDataCRUD : DataCRUD {
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): User {
-    val nextUser = runCatching {
+    val nextUser = run {
       User(
         id = -1, // not defined here
         name = createUserRequestDTO.name,
@@ -568,7 +570,7 @@ object AppUsecases {
         timeZone = createUserRequestDTO.timeZone,
         isAdmin = isAdmin
       )
-    }.getOrThrow()
+    }
 
     return ExposedDataCRUD.createUser(
       name = nextUser.name,
@@ -605,12 +607,10 @@ object AppUsecases {
 
       // we assume the list can not be null, it can only be empty, because a user with [userId] was verified above
       return ExposedDataCRUD.getPointsByUserId(it.id).let { instants ->
-        if (instants != null) {
-          if (instants.isNotEmpty()) {
-            val lastInstant = instants.last().instant
-            if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
-              throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
-            }
+        if (instants.isNotEmpty()) {
+          val lastInstant = instants.last().instant
+          if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
+            throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
           }
         }
 
@@ -622,8 +622,8 @@ object AppUsecases {
     }
   }
 
-  suspend fun getUserPoints(userId: Int): List<PointDTO>? {
-    return ExposedDataCRUD.getPointsByUserId(userId)?.map { it.toPointDto() }
+  suspend fun getUserPoints(userId: Int): List<PointDTO> {
+    return ExposedDataCRUD.getPointsByUserId(userId).map { it.toPointDto() }
   }
 
   suspend fun getAllAppPoints(): List<PointDTO> = ExposedDataCRUD.getAllPoints().map { it.toPointDto() }
@@ -913,7 +913,6 @@ fun Routing.routesHandlers() {
     get("/users/points") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.getUserPoints(claims.userId)
-        ?: return@get call.respond(HttpStatusCode.NotFound, "No points found for requested user ID")
       return@get call.respond(HttpStatusCode.OK, result)
     }
     //</editor-fold>
@@ -997,6 +996,21 @@ fun main() {
             timeZone = TimeZone.of("America/Sao_Paulo")
           ),
           isAdmin = true
+        )
+
+        // -------
+
+        AppUsecases.signupUser(
+          createUserRequestDTO = CreateUserRequestDTO(
+            name = "Sou Padrão",
+            email = "standard@system.com",
+            plainPassword = "123456",
+            timeIntervals = listOf(
+              TimeInterval.fromString("0:00/23:59") // we are considering full day, to avoid problems when testing?
+            ),
+            timeZone = TimeZone.of("America/Sao_Paulo")
+          ),
+          isAdmin = false
         )
       }
     }.onSuccess {
