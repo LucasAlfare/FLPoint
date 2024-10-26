@@ -214,7 +214,7 @@ data class User(
   }
 
   fun toUserDto() = UserDTO(
-    id, name, email, timeIntervals, isAdmin
+    id, name, email, timeZone, timeIntervals, isAdmin
   )
 }
 
@@ -278,6 +278,7 @@ data class UserDTO(
   val id: Int,
   val name: String,
   val email: String,
+  val timeZone: TimeZone,
   val timeIntervals: List<TimeInterval>,
   val isAdmin: Boolean
 )
@@ -998,11 +999,10 @@ fun main() {
           isAdmin = true
         )
 
-        // -------
-
+        // We also create a basic hardcoded non-admin user for testing
         AppUsecases.signupUser(
           createUserRequestDTO = CreateUserRequestDTO(
-            name = "Sou Padrão",
+            name = "Gabirú Reptiliano",
             email = "standard@system.com",
             plainPassword = "123456",
             timeIntervals = listOf(
