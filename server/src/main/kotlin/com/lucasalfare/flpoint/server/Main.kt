@@ -891,7 +891,7 @@ fun Routing.routesHandlers() {
   authenticate("flpoint-jwt-auth") {
     //<editor-fold desc="USER-ROUTES">
     // used to update current password
-    patch("/users/update-password") {
+    patch("/user/update-password") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val receivedCurrentPlainPassword = call.receive<UpdateUserPasswordRequestDTO>()
       val result = AppUsecases.updateUserPassword(
@@ -904,14 +904,15 @@ fun Routing.routesHandlers() {
     }
 
     // used to create point
-    post("/users/point") {
+    post("/user/point") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.doPoint(claims.userId)
       return@post call.respond(HttpStatusCode.Created, result)
     }
 
+    // TODO: make this cache results
     // Route for user getting only his own points
-    get("/users/points") {
+    get("/user/points") {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.getUserPoints(claims.userId)
       return@get call.respond(HttpStatusCode.OK, result)
@@ -933,6 +934,7 @@ fun Routing.routesHandlers() {
       return@post call.respond(status = HttpStatusCode.Created, message = result)
     }
 
+    // TODO: make this cache results
     // used to get all database users
     get("/admin/users") {
       return@get handleAsAuthorizedAdmin {
@@ -960,6 +962,7 @@ fun Routing.routesHandlers() {
       }
     }
 
+    // TODO: make this cache results
     // used to retrieve all the points of the database
     get("/admin/points") {
       return@get handleAsAuthorizedAdmin {
