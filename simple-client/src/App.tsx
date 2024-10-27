@@ -10,6 +10,7 @@ const loginEndpoint = "/login";
 const createPointEndPoint = "/user/point";
 const getAllOwnUserPointsEndpoint = "/user/points";
 const changePassowordEndpoint = "/user/update-password";
+const userLogoutEndpoint = "/user/logout";
 const getAllUsersEndpoint = "/admin/users";
 
 // types for matching what exists in the Kotlin API; handful
@@ -92,7 +93,6 @@ function Login() {
       const loginResponse: LoginResponseDTO = await response.json();
 
       // if login is ok, then stores the JWT in cookies
-      // document.cookie = `jwt=${loginResponse.jwt}; max-age=3600; path=/; secure; samesite=strict`;
       setCookie('jwt', loginResponse.jwt);
 
       const nextPanelRoute = loginResponse.userDTO.isAdmin ? "/admin-panel" : "/user-panel";
@@ -274,9 +274,28 @@ function StandardUserPanel() {
     }
   }
 
-  function handleLogout() {
-    setCookie('jwt', '');
-    navigate('/');
+  async function handleLogout() {
+    const currentJwt = getCookie('jwt');
+
+    try {
+      const logoutResponse = await fetch(`${serverUrl}${userLogoutEndpoint}`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${currentJwt}`,
+          "Content-Type": "application/json", // needed when sendin raw string?
+        },
+        body: currentJwt
+      });
+
+      if (!logoutResponse.ok) {
+        throw new Error(logoutResponse.status + "\n" + "Não é possível fazer logout!?!?!?!?");
+      }
+
+      setCookie('jwt', '');
+      navigate('/');
+    } catch (error) {
+      alert(error);
+    }
   }
 
   return (

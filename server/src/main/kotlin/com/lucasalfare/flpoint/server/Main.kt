@@ -332,6 +332,12 @@ interface DataCRUD {
   suspend fun deletePoint(id: Int): Boolean
 
   suspend fun clearPoints(): Boolean
+
+  suspend fun createJwtBlackListed(jwt: String)
+
+  suspend fun jwtBlackListContains(jwt: String): Boolean
+
+  suspend fun clearJwtBlackList()
 }
 //</editor-fold>
 
@@ -356,6 +362,11 @@ object Users : IntIdTable("Users") {
 object Points : IntIdTable("Points") {
   val relatedUserId = integer("related_user_id").references(Users.id)
   val instant = timestamp("instant")
+}
+
+// TODO: include reference to user that holds this jwt
+object JwtBlacklist : IntIdTable("JwtBlackList") {
+  val jwt = text("jwt").uniqueIndex()
 }
 //</editor-fold>
 
@@ -555,6 +566,22 @@ object ExposedDataCRUD : DataCRUD {
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to clear all points")) {
       Points.deleteAll() >= 0
     }
+
+  override suspend fun createJwtBlackListed(jwt: String): Unit =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to insert JWT in the Black List!")) {
+      JwtBlacklist.insert {
+        it[JwtBlacklist.jwt] = jwt
+      }
+    }
+
+  override suspend fun jwtBlackListContains(jwt: String): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to check if JwtBlackList contains the JWT!")) {
+      JwtBlacklist.selectAll().where { JwtBlacklist.jwt eq jwt }.any()
+    }
+
+  override suspend fun clearJwtBlackList(): Unit = AppDB.safeQuery {
+    JwtBlacklist.deleteAll()
+  }
 }
 //</editor-fold>
 
@@ -596,6 +623,10 @@ object AppUsecases {
         userDTO = it.toUserDto()
       )
     }
+
+  suspend fun logoutUser(currentUserJwt: String) {
+    ExposedDataCRUD.createJwtBlackListed(currentUserJwt)
+  }
 
   suspend fun doPoint(userId: Int): Int {
     ExposedDataCRUD.getUser(userId).let {
@@ -790,10 +821,16 @@ fun Application.authenticationConfiguration() {
       verifier(JwtGenerator.verifier)
 
       validate { jwtCredential ->
+
+        val jwtToken = this.request.headers["Authorization"]?.removePrefix("Bearer ")
+        if (jwtToken != null) {
+          println("BLACK LIST CONTAINS THE TOKEN? ${ExposedDataCRUD.jwtBlackListContains(jwtToken)}")
+        }
+
         val id = jwtCredential.payload.getClaim(AppJwtClaims.USER_ID_KEY).asInt()
         val isAdmin = jwtCredential.payload.getClaim(AppJwtClaims.IS_ADMIN_KEY).asBoolean()
 
-        if (id != null && isAdmin != null) {
+        return@validate if (id != null && isAdmin != null) {
           JWTPrincipal(jwtCredential.payload)
         } else {
           null
@@ -874,10 +911,6 @@ fun Application.initKtorConfiguration() {
 //</editor-fold>
 
 //<editor-fold desc="KTOR-ROUTES-HANDLERS-SECTION">
-// TODO: implement "logout" logic by using blacklist of JWTs.
-// TODO: always an endpoint "logout" was called, add the JWT
-// TODO: to the blacklist. Then always a request is made,
-// TODO: check if the jwt is in the blacklist, if yes, refuse
 fun Routing.routesHandlers() {
   //<editor-fold desc="PUBLIC-ROUTES">
   // global root health route
@@ -920,6 +953,12 @@ fun Routing.routesHandlers() {
       val claims = call.getAppJwtClaims() ?: throw AppError("Error retrieving JWT claims!")
       val result = AppUsecases.getUserPoints(claims.userId)
       return@get call.respond(HttpStatusCode.OK, result)
+    }
+
+    post("/user/logout") {
+      val jwt = call.receive<String>()
+      AppUsecases.logoutUser(jwt)
+      return@post call.respond(HttpStatusCode.OK)
     }
     //</editor-fold>
 
@@ -989,7 +1028,7 @@ fun main() {
     password = "",
     maximumPoolSize = 5
   ) {
-    SchemaUtils.createMissingTablesAndColumns(Users, Points)
+    SchemaUtils.createMissingTablesAndColumns(Users, Points, JwtBlacklist)
 
     // always to try to create admin
     runCatching {
