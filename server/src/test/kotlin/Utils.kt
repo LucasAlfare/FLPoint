@@ -66,7 +66,7 @@ internal fun initTestingDatabase() {
   }
 
   transaction {
-    SchemaUtils.createMissingTablesAndColumns(
+    SchemaUtils.create(
       Users, Points
     )
   }
