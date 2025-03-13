@@ -875,7 +875,7 @@ fun Application.statusPagesConfiguration() {
   }
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.handleAsAuthorizedAdmin(
+suspend fun RoutingContext.handleAsAuthorizedAdmin(
   onSucceedAdminVerification: suspend () -> Unit = {}
 ) {
   val principal = call.principal<JWTPrincipal>()
@@ -970,7 +970,7 @@ fun Routing.routesHandlers() {
       }
     }
 
-    // used for signup an user
+    // used for signup a user
     post("/admin/register") {
       val dto = call.receive<CreateUserRequestDTO>()
       val result = AppUsecases.signupUser(dto)
