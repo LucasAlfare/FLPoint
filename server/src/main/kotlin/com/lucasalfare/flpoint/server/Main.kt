@@ -915,7 +915,7 @@ fun Routing.routesHandlers() {
   // global root health route
   get("/health") { call.respondText("Hello from Kotlin/Ktor API!") }
 
-  // used for logging in a existing user
+  // used for logging in an existing user
   post("/login") {
     val dto = call.receive<CredentialsDTO>()
     val result = AppUsecases.loginUser(dto)
