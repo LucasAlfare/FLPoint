@@ -1,6 +1,3 @@
-val ktor_version: String by project
-val exposed_version: String by project
-
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.serialization)
@@ -30,8 +27,9 @@ dependencies {
   implementation(libs.exposed.kotlin.datetime)
 
   // Database Drivers
-  implementation(libs.jdbc.sqlite) // for easy testing
   implementation(libs.jdbc.postgres)
+  implementation(libs.jdbc.sqlite) // for easy testing
+  implementation(libs.jdbc.h2)
 
   // HikariCP (Connection Pool)
   implementation(libs.hikaricp)
