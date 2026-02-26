@@ -82,7 +82,7 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 
 //<editor-fold desc="RULES-SECTION">
 
-// TODO: this function still not correctly working
+// TODO: this function still not correctly working?
 fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
   val checkLocal = check.toLocalDateTime(user.timeZone).time
 
@@ -91,10 +91,10 @@ fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
     val exit = interval.exit
 
     val isInside = if (enter <= exit) {
-      // normal interval (same day)
+      // same day interval
       checkLocal in enter..exit
     } else {
-      // interval crossing midnight
+      // crossing midnight interval
       checkLocal >= enter || checkLocal <= exit
     }
 
@@ -161,8 +161,9 @@ data class TimeInterval(
 ) {
 
   init {
-    if (exit < enter) throw ValidationError("Exit time is earlier than Enter time! Look, enter=[$enter], exit[$exit]")
-    // TODO: validate if the difference between enter/exit is less/higher than something
+    if (enter == exit) {
+      throw ValidationError("Enter and exit time can not be equal!")
+    }
   }
 
   /*
@@ -1005,9 +1006,11 @@ fun Routing.routesHandlers() {
 
     // used for signup a user
     post("/admin/register") {
-      val dto = call.receive<CreateUserRequestDTO>()
-      val result = AppUsecases.signupUser(dto)
-      return@post call.respond(status = HttpStatusCode.Created, message = result)
+      return@post handleAsAuthorizedAdmin {
+        val dto = call.receive<CreateUserRequestDTO>()
+        val result = AppUsecases.signupUser(dto)
+        call.respond(status = HttpStatusCode.Created, message = result)
+      }
     }
 
     // TODO: make this cache results
