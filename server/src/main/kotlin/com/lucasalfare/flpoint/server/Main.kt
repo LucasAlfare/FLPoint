@@ -34,8 +34,11 @@ import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -255,7 +258,7 @@ interface DataCRUD {
 
   suspend fun clearPoints(): Boolean
 
-  suspend fun createJwtBlackListed(jwt: String)
+  suspend fun createJwtBlackListed(jwt: String, expiresAt: Instant)
 
   suspend fun jwtBlackListContains(jwt: String): Boolean
 
@@ -280,6 +283,7 @@ object Points : IntIdTable("Points") {
 // TODO: include reference to user that holds this jwt
 object JwtBlacklist : IntIdTable("JwtBlackList") {
   val jwt = text("jwt").uniqueIndex()
+  val expiresAt = timestamp("expires_at").index()
 }
 //</editor-fold>
 
@@ -452,16 +456,34 @@ object ExposedDataCRUD : DataCRUD {
       Points.deleteAll() >= 0
     }
 
-  override suspend fun createJwtBlackListed(jwt: String): Unit =
+  override suspend fun createJwtBlackListed(jwt: String, expiresAt: Instant): Unit =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to insert JWT in the Black List!")) {
       JwtBlacklist.insert {
         it[JwtBlacklist.jwt] = jwt
+        it[JwtBlacklist.expiresAt] = expiresAt
       }
     }
 
   override suspend fun jwtBlackListContains(jwt: String): Boolean =
-    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible to check if JwtBlackList contains the JWT!")) {
-      JwtBlacklist.selectAll().where { JwtBlacklist.jwt eq jwt }.any()
+    AppDB.safeQuery {
+      val now = Clock.System.now()
+      val row = JwtBlacklist
+        .selectAll()
+        .where { JwtBlacklist.jwt eq jwt }
+        .singleOrNull()
+
+      if (row != null) {
+        val expires = row[JwtBlacklist.expiresAt]
+
+        if (expires <= now) {
+          JwtBlacklist.deleteWhere { JwtBlacklist.id eq row[JwtBlacklist.id].value }
+          return@safeQuery false
+        }
+
+        return@safeQuery true
+      }
+
+      false
     }
 
   override suspend fun clearJwtBlackList(): Unit = AppDB.safeQuery {
@@ -494,6 +516,15 @@ object ExposedDataCRUD : DataCRUD {
         ?.get(Users.isAdmin)
         ?: false
     }
+
+  suspend fun deleteExpiredBlacklistedTokens() =
+    AppDB.safeQuery {
+      val now = Clock.System.now()
+
+      JwtBlacklist.deleteWhere {
+        JwtBlacklist.expiresAt lessEq now
+      }
+    }
 }
 //</editor-fold>
 
@@ -511,10 +542,8 @@ object AppUsecases {
 
   suspend fun loginUser(credentialsDTO: CredentialsDTO): LoginResponseDTO =
     ExposedDataCRUD.getUser(credentialsDTO.email).let {
-      if (it == null) throw AuthenticationError("User doesn't exists")
-
-      if (!plainMatchesHashed(credentialsDTO.plainPassword, it.hashedPassword)) {
-        throw AuthenticationError("Bad credentials")
+      if (it == null || !plainMatchesHashed(credentialsDTO.plainPassword, it.hashedPassword)) {
+        throw AuthenticationError("Invalid credentials")
       }
 
       LoginResponseDTO(
@@ -524,7 +553,8 @@ object AppUsecases {
     }
 
   suspend fun logoutUser(currentUserJwt: String) {
-    ExposedDataCRUD.createJwtBlackListed(currentUserJwt)
+    val expiresAt = extractExpirationFromJwt(currentUserJwt)
+    ExposedDataCRUD.createJwtBlackListed(currentUserJwt, expiresAt)
   }
 
   suspend fun doPoint(userId: Int): Int {
@@ -669,24 +699,21 @@ data class AppJwtClaims(
 
 object JwtGenerator {
 
-  var jwtAlgorithmSignSecret = "JWT_ALGORITHM_SIGN_SECRET"
+  private lateinit var algorithm: Algorithm
+  lateinit var verifier: JWTVerifier
+    private set
 
-  val verifier: JWTVerifier = JWT
-    .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
-    .build()
+  fun initialize(secret: String) {
+    algorithm = Algorithm.HMAC256(secret)
+    verifier = JWT.require(algorithm).build()
+  }
 
-  fun generate(
-    claims: AppJwtClaims
-  ): String {
-    return try {
-      JWT.create()
-        .withClaim(AppJwtClaims.USER_ID_KEY, claims.userId)
-        .withClaim(AppJwtClaims.IS_ADMIN_KEY, claims.isAdmin)
-        .withExpiresAt(claims.expiresAt.toJavaInstant())
-        .sign(Algorithm.HMAC256(jwtAlgorithmSignSecret))
-    } catch (e: JWTCreationException) {
-      throw AppError("Error occurred while creating a JWT")
-    }
+  fun generate(claims: AppJwtClaims): String {
+    return JWT.create()
+      .withClaim(AppJwtClaims.USER_ID_KEY, claims.userId)
+      .withClaim(AppJwtClaims.IS_ADMIN_KEY, claims.isAdmin)
+      .withExpiresAt(claims.expiresAt.toJavaInstant())
+      .sign(algorithm)
   }
 }
 
@@ -696,6 +723,18 @@ fun ApplicationCall.getAppJwtClaims(): AppJwtClaims? {
   val isAdmin = principal.payload.getClaim(AppJwtClaims.IS_ADMIN_KEY) ?: return null
   val expiresAt = principal.payload.expiresAt
   return AppJwtClaims(userId.asInt(), isAdmin.asBoolean(), expiresAt.toInstant().toKotlinInstant())
+}
+
+fun ApplicationCall.getBearerToken(): String? {
+  return request.headers["Authorization"]
+    ?.removePrefix("Bearer ")
+    ?.trim()
+}
+
+fun extractExpirationFromJwt(token: String): Instant {
+  val decoded = JWT.decode(token)
+  val exp = decoded.expiresAt ?: throw AuthenticationError("Token without expiration")
+  return exp.toInstant().toKotlinInstant()
 }
 //</editor-fold>
 
@@ -767,7 +806,7 @@ fun Application.statusPagesConfiguration() {
         )
 
         else -> {
-          cause.printStackTrace()
+          Constants.logger.trace(cause.message)
           if (cause is BadRequestException) {
             call.respond(HttpStatusCode.BadRequest, cause.message ?: "BadRequestException")
           } else {
@@ -874,8 +913,11 @@ fun Routing.routesHandlers() {
     }
 
     post("/user/logout") {
-      val jwt = call.receive<String>()
+      val jwt = call.getBearerToken()
+        ?: throw AuthenticationError("Missing Authorization token")
+
       AppUsecases.logoutUser(jwt)
+
       return@post call.respond(HttpStatusCode.OK)
     }
     //</editor-fold>
@@ -933,6 +975,7 @@ fun main() {
   val appEnv = System.getenv("APP_ENV")?.lowercase() ?: "dev"
   val isDev = appEnv == "dev"
 
+  // rlx, isso aqui compila, é novo no kotlin.
   Constants.logger.debug($$"Starting application in environment: $appEnv")
 
   val jdbcUrl =
@@ -958,12 +1001,14 @@ fun main() {
     else System.getenv("WEBSERVER_PORT")?.toIntOrNull()
       ?: error("WEBSERVER_PORT not defined or invalid")
 
-  JwtGenerator.jwtAlgorithmSignSecret = if (isDev) {
-    "dev-secret"
-  } else {
-    System.getenv("JWT_ALGORITHM_SIGN_SECRET")
-      ?: error("JWT_ALGORITHM_SIGN_SECRET not defined")
-  }
+  JwtGenerator.initialize(
+    secret = if (isDev) {
+      "dev-secret"
+    } else {
+      System.getenv("JWT_ALGORITHM_SIGN_SECRET")
+        ?: error("JWT_ALGORITHM_SIGN_SECRET not defined")
+    }
+  )
 
   AppDB.initialize(
     jdbcUrl = jdbcUrl,
@@ -999,6 +1044,8 @@ fun main() {
             isAdmin = false
           )
         }
+
+        ExposedDataCRUD.deleteExpiredBlacklistedTokens()
       }
     }.onSuccess {
       Constants.logger.debug("Initial users created (or already existed)")
