@@ -82,28 +82,6 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 
 //<editor-fold desc="RULES-SECTION">
 
-// TODO: this function still not correctly working?
-fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
-  val checkLocal = check.toLocalDateTime(user.timeZone).time
-
-  for (interval in user.timeIntervals) {
-    val enter = interval.enter
-    val exit = interval.exit
-
-    val isInside = if (enter <= exit) {
-      // same day interval
-      checkLocal in enter..exit
-    } else {
-      // crossing midnight interval
-      checkLocal >= enter || checkLocal <= exit
-    }
-
-    if (isInside) return true
-  }
-
-  return false
-}
-
 // TODO: include rule about if checking instant is in tolerated times
 // TODO: this should be implemented in modeling and in Usecases:
 // TODO: if outside a tolerated range, then add some flag to the user...
@@ -154,85 +132,16 @@ class RuleViolatedError(message: String = "RulesNotMatched") : AppError(message)
 class NoPrivilegeError(message: String = "NoPrivilegeError") : AppError(message)
 // ...
 
-@Serializable
-data class TimeInterval(
-  val enter: LocalTime,
-  val exit: LocalTime
-) {
-
-  init {
-    if (enter == exit) {
-      throw ValidationError("Enter and exit time can not be equal!")
-    }
-  }
-
-  /*
-  we are keeping some string-parsing functions to avoid using extra tables
-  for time intervals and to avoid using "array" column type, once it is
-  only compatible with Postgres and H2 dialects.
-
- Look "Users" table in the Exposed Schema to see the [timeIntervalsStringList]
- column.
-   */
-  companion object {
-    /*
-    hh:mm/hh:mm
-     */
-    fun fromString(s: String): TimeInterval {
-      val split = s.split("/")
-      if (split.size != 2) throw AppError("Can not to build TimeInterval from the string [$s].")
-
-      try {
-        val enterTime = split[0].split(":")
-        val exitTime = split[1].split(":")
-
-        val nextEnter = LocalTime(hour = enterTime[0].toInt(), minute = enterTime[1].toInt())
-        val nextExit = LocalTime(hour = exitTime[0].toInt(), minute = exitTime[1].toInt())
-
-        return TimeInterval(
-          enter = nextEnter,
-          exit = nextExit
-        )
-      } catch (e: Exception) {
-        throw AppError("Was not possible to parse and build a TimeInterval instance from the string [$s].")
-      }
-    }
-
-    /*
-    [hh:mm/hh:mm, ...]
-     */
-    fun fromStringList(sList: String): List<TimeInterval> {
-      val sanitized = sList.replace("[", "").replace("]", "").replace(" ", "").split(",")
-      return sanitized.map { fromString(it) }
-    }
-
-    fun listToString(timeIntervals: List<TimeInterval>): String = timeIntervals.map { it.toString() }.toString()
-  }
-
-  /*
-  hh:mm,hh:mm
-  */
-  override fun toString() = "${enter.hour}:${enter.minute}/${exit.hour}:${exit.minute}"
-}
-
 data class User(
   val id: Int,
   val name: String,
   val email: String,
   val hashedPassword: String,
-  var timeIntervals: List<TimeInterval>,
   val timeZone: TimeZone,
   val isAdmin: Boolean
 ) {
-
-  init {
-    // we don't allow a standard user without any time interval!
-    if (!isAdmin && timeIntervals.isEmpty())
-      throw ValidationError("A non-admin user must have at lease 1 time interval!")
-  }
-
   fun toUserDto() = UserDTO(
-    id, name, email, timeZone, timeIntervals, isAdmin
+    id, name, email, timeZone, isAdmin
   )
 }
 
@@ -252,7 +161,6 @@ data class CreateUserRequestDTO(
   val name: String,
   val email: String,
   val plainPassword: String,
-  val timeIntervals: List<TimeInterval>,
   val timeZone: TimeZone = TimeZone.UTC
 ) {
   init {
@@ -297,7 +205,6 @@ data class UserDTO(
   val name: String,
   val email: String,
   val timeZone: TimeZone,
-  val timeIntervals: List<TimeInterval>,
   val isAdmin: Boolean
 )
 
@@ -314,7 +221,6 @@ interface DataCRUD {
     name: String,
     email: String,
     hashedPassword: String,
-    timeIntervals: List<TimeInterval>,
     timeZone: TimeZone,
     isAdmin: Boolean
   ): User
@@ -330,7 +236,6 @@ interface DataCRUD {
     name: String? = null,
     email: String? = null,
     hashedPassword: String? = null,
-    timeIntervals: List<TimeInterval>? = null,
     timeZone: TimeZone? = null,
     isAdmin: Boolean? = null
   ): Boolean
@@ -364,15 +269,6 @@ object Users : IntIdTable("Users") {
   val name = varchar("name", 255)
   val email = varchar("email", 255).uniqueIndex()
   val hashedPassword = varchar("hashed_password", 255)
-
-  /**
-   * This column is stored as string only due to avoid extra tables
-   * or using a "custom" array column.
-   *
-   * This string is compiled and decompiled from a [TimeInterval] list
-   * through the static/companion functions in the [TimeInterval] class.
-   */
-  val timeIntervalsStringList = text("time_intervals")
   val timeZone = text("time_zone")
   val isAdmin = bool("is_admin").default(false)
 }
@@ -397,25 +293,17 @@ object ExposedDataCRUD : DataCRUD {
     name: String,
     email: String,
     hashedPassword: String,
-    timeIntervals: List<TimeInterval>,
     timeZone: TimeZone,
     isAdmin: Boolean
   ): User = AppDB.safeQuery(
     onFailureThrowable = DataHandlingError("Could not to create user")
   ) {
-    val nextTimeIntervals = if (isAdmin) {
-      ""
-    } else {
-      TimeInterval.listToString(timeIntervals)
-    }
-
     // TODO: "insertReturning" is not supported by H2, but others can do. In future implement for both.
 
     val id = Users.insertAndGetId {
       it[Users.name] = name
       it[Users.email] = email
       it[Users.hashedPassword] = hashedPassword
-      it[Users.timeIntervalsStringList] = nextTimeIntervals
       it[Users.timeZone] = timeZone.toString()
       it[Users.isAdmin] = isAdmin
     }.value
@@ -425,7 +313,6 @@ object ExposedDataCRUD : DataCRUD {
       name = name,
       email = email,
       hashedPassword = hashedPassword,
-      timeIntervals = timeIntervals,
       timeZone = timeZone,
       isAdmin = isAdmin
     )
@@ -436,16 +323,11 @@ object ExposedDataCRUD : DataCRUD {
       Users.selectAll().where { Users.id eq id }.singleOrNull().let {
         if (it == null) null
         else {
-          val nextTimeIntervals =
-            if (it[Users.isAdmin]) emptyList()
-            else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
-
           User(
             id = it[Users.id].value,
             name = it[Users.name],
             email = it[Users.email],
             hashedPassword = it[Users.hashedPassword],
-            timeIntervals = nextTimeIntervals,
             timeZone = TimeZone.of(it[Users.timeZone]),
             isAdmin = it[Users.isAdmin]
           )
@@ -458,16 +340,11 @@ object ExposedDataCRUD : DataCRUD {
       Users.selectAll().where { Users.email eq email }.singleOrNull().let {
         if (it == null) null
         else {
-          val nextTimeIntervals =
-            if (it[Users.isAdmin]) emptyList()
-            else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
-
           User(
             id = it[Users.id].value,
             name = it[Users.name],
             email = it[Users.email],
             hashedPassword = it[Users.hashedPassword],
-            timeIntervals = nextTimeIntervals,
             timeZone = TimeZone.of(it[Users.timeZone]),
             isAdmin = it[Users.isAdmin]
           )
@@ -479,16 +356,11 @@ object ExposedDataCRUD : DataCRUD {
     onFailureThrowable = DataHandlingError("Error trying to retrieve all application users")
   ) {
     Users.selectAll().map {
-      val nextTimeIntervals =
-        if (it[Users.isAdmin]) emptyList()
-        else TimeInterval.fromStringList(it[Users.timeIntervalsStringList])
-
       User(
         id = it[Users.id].value,
         name = it[Users.name],
         email = it[Users.email],
         hashedPassword = it[Users.hashedPassword],
-        timeIntervals = nextTimeIntervals,
         timeZone = TimeZone.of(it[Users.timeZone]),
         isAdmin = it[Users.isAdmin]
       )
@@ -500,7 +372,6 @@ object ExposedDataCRUD : DataCRUD {
     name: String?,
     email: String?,
     hashedPassword: String?,
-    timeIntervals: List<TimeInterval>?,
     timeZone: TimeZone?,
     isAdmin: Boolean?
   ): Boolean = AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error updating user by ID")) {
@@ -508,7 +379,6 @@ object ExposedDataCRUD : DataCRUD {
       if (name != null) it[Users.name] = name
       if (email != null) it[Users.email] = email
       if (hashedPassword != null) it[Users.hashedPassword] = hashedPassword
-      if (timeIntervals != null) it[Users.timeIntervalsStringList] = TimeInterval.listToString(timeIntervals)
       if (timeZone != null) it[Users.timeZone] = timeZone.toString()
       if (isAdmin != null) it[Users.isAdmin] = isAdmin
     } > 0
@@ -629,7 +499,6 @@ object AppUsecases {
         name = createUserRequestDTO.name,
         email = createUserRequestDTO.email,
         hashedPassword = hashed(createUserRequestDTO.plainPassword),
-        timeIntervals = createUserRequestDTO.timeIntervals,
         timeZone = createUserRequestDTO.timeZone,
         isAdmin = isAdmin
       )
@@ -639,7 +508,6 @@ object AppUsecases {
       name = nextUser.name,
       email = nextUser.email,
       hashedPassword = nextUser.hashedPassword,
-      timeIntervals = nextUser.timeIntervals,
       timeZone = nextUser.timeZone,
       isAdmin = nextUser.isAdmin
     )
@@ -668,10 +536,6 @@ object AppUsecases {
       ?: throw AppError("User not found")
 
     val generatedInstant = Clock.System.now()
-
-    if (!instantIsInValidTimeInterval(check = generatedInstant, user = user)) {
-      throw RuleViolatedError("Tried to do point in a time that is not in any of the user time intervals!")
-    }
 
     val lastPoint = ExposedDataCRUD.getLastPointByUserId(user.id)
 
@@ -706,14 +570,6 @@ object AppUsecases {
         id = userId,
         hashedPassword = hashed(newPlainPassword)
       )
-    }
-
-  suspend fun updateUserTimeIntervals(userId: Int, newIntervals: List<TimeInterval>): Boolean =
-    ExposedDataCRUD.getUser(userId).let { user: User? ->
-      if (user == null) throw AppError("User was not found by ID")
-      if (newIntervals.isEmpty()) throw RuleViolatedError("Can not to update user time intervals: new intervals list is empty")
-
-      ExposedDataCRUD.updateUser(id = userId, timeIntervals = newIntervals)
     }
 
   suspend fun getAllAppUsers(): List<UserDTO> = ExposedDataCRUD.getAllUsers().map { it.toUserDto() }
@@ -1021,16 +877,6 @@ fun Routing.routesHandlers() {
       }
     }
 
-    // used to update the time intervals of the {id} user
-    patch("/admin/users/{id}/update-time-intervals") {
-      return@patch handleAsAuthorizedAdmin {
-        val userId = call.parameters["id"] ?: throw AppError("Missing path parameter user ID")
-        val receivedTimeIntervals = call.receive<List<TimeInterval>>()
-        val result = AppUsecases.updateUserTimeIntervals(userId.toInt(), receivedTimeIntervals)
-        return@handleAsAuthorizedAdmin call.respond(HttpStatusCode.OK, result)
-      }
-    }
-
     // used to delete the {id} user
     delete("/admin/users/{id}") {
       return@delete handleAsAuthorizedAdmin {
@@ -1075,7 +921,6 @@ fun main() {
             name = "Francisco Lucas",
             email = "fl_admin@system.com",
             plainPassword = "123456",
-            timeIntervals = emptyList(),
             timeZone = TimeZone.of("America/Sao_Paulo")
           ),
           isAdmin = true
@@ -1087,9 +932,6 @@ fun main() {
             name = "Gabirú Reptiliano",
             email = "standard@system.com",
             plainPassword = "123456",
-            timeIntervals = listOf(
-              TimeInterval.fromString("0:00/23:59") // we are considering full day, to avoid problems when testing?
-            ),
             timeZone = TimeZone.of("America/Sao_Paulo")
           ),
           isAdmin = false
