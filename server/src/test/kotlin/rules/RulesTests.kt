@@ -1,6 +1,6 @@
 package rules
 
-import com.lucasalfare.flpoint.server.instantIsAtLeast30MinutesAwayFromLast
+import com.lucasalfare.flpoint.server.instantIsAtLeast10SecondsAwayFromLast
 import com.lucasalfare.flpoint.server.instantIsInValidTimeInterval
 import getSomeUser
 import kotlinx.datetime.toLocalDateTime
@@ -18,7 +18,7 @@ class RulesTests {
     val last = Instant.parse("2024-10-16T08:00:00.00Z")
     val current = Instant.parse("2024-10-16T08:40:00.00Z")
 
-    val result = instantIsAtLeast30MinutesAwayFromLast(current, last)
+    val result = instantIsAtLeast10SecondsAwayFromLast(current, last)
     assertTrue(result)
   }
 
@@ -27,7 +27,7 @@ class RulesTests {
     val last = Instant.parse("2024-10-16T08:00:00.00Z")
     val current = Instant.parse("2024-10-16T08:10:00.00Z")
 
-    val result = instantIsAtLeast30MinutesAwayFromLast(current, last)
+    val result = instantIsAtLeast10SecondsAwayFromLast(current, last)
     assertFalse(result)
   }
 

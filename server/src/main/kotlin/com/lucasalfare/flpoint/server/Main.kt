@@ -29,9 +29,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -51,6 +49,7 @@ import org.jetbrains.exposed.v1.jdbc.update
 import org.mindrot.jbcrypt.BCrypt
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
@@ -81,13 +80,8 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 //</editor-fold>
 
 //<editor-fold desc="RULES-SECTION">
-
-// TODO: include rule about if checking instant is in tolerated times
-// TODO: this should be implemented in modeling and in Usecases:
-// TODO: if outside a tolerated range, then add some flag to the user...
-
-fun instantIsAtLeast30MinutesAwayFromLast(check: Instant, lastInstant: Instant): Boolean =
-  check - lastInstant >= 30.minutes
+fun instantIsAtLeast10SecondsAwayFromLast(check: Instant, lastInstant: Instant): Boolean =
+  check - lastInstant >= 10.seconds
 
 fun validateName(name: String) {
   if (name.isBlank()) throw ValidationError("Name cannot be empty")
@@ -541,7 +535,7 @@ object AppUsecases {
 
     if (lastPoint != null) {
       val lastInstant = lastPoint.instant
-      if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
+      if (!instantIsAtLeast10SecondsAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
         throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
       }
     }
