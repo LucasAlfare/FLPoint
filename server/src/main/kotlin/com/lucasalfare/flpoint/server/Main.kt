@@ -342,7 +342,7 @@ interface DataCRUD {
 
   suspend fun getPoint(id: Int): Point?
 
-  suspend fun getPointsByUserId(userId: Int): List<Point>
+  suspend fun getAllPointsByUserId(userId: Int): List<Point>
 
   suspend fun getAllPoints(): List<Point>
 
@@ -546,7 +546,7 @@ object ExposedDataCRUD : DataCRUD {
       }
     }
 
-  override suspend fun getPointsByUserId(userId: Int): List<Point> =
+  override suspend fun getAllPointsByUserId(userId: Int): List<Point> =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Was not possible select points by the desired user ID")) {
       Points
         .selectAll()
@@ -688,7 +688,7 @@ object AppUsecases {
   }
 
   suspend fun getUserPoints(userId: Int): List<PointDTO> {
-    return ExposedDataCRUD.getPointsByUserId(userId).map { it.toPointDto() }
+    return ExposedDataCRUD.getAllPointsByUserId(userId).map { it.toPointDto() }
   }
 
   suspend fun getAllAppPoints(): List<PointDTO> = ExposedDataCRUD.getAllPoints().map { it.toPointDto() }
