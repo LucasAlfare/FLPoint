@@ -117,6 +117,7 @@ class Constants {
     const val DEFAULT_JWT_EXPIRATION_TIME = 10 // minutes
 
     const val DATABASE_SQLITE_URL = "jdbc:sqlite:./data.db"
+    const val DATABASE_SQLITE_DRIVER = "org.sqlite.JDBC"
 
     // in memory H2, for testing
 //    const val DATABASE_H2_URL = "jdbc:h2:mem:regular"
@@ -975,16 +976,15 @@ fun main() {
   val appEnv = System.getenv("APP_ENV")?.lowercase() ?: "dev"
   val isDev = appEnv == "dev"
 
-  // rlx, isso aqui compila, é novo no kotlin.
-  Constants.logger.debug($$"Starting application in environment: $appEnv")
+  Constants.logger.debug("Starting application in environment: $appEnv")
 
   val jdbcUrl =
-    if (isDev) Constants.DATABASE_H2_URL
+    if (isDev) Constants.DATABASE_SQLITE_URL
     else System.getenv("DATABASE_JDBC_URL")
       ?: error("DATABASE_JDBC_URL not defined")
 
   val jdbcDriver =
-    if (isDev) Constants.DATABASE_H2_DRIVER
+    if (isDev) Constants.DATABASE_SQLITE_DRIVER
     else System.getenv("DATABASE_JDBC_CLASS_NAME")
       ?: error("DATABASE_JDBC_CLASS_NAME not defined")
 
@@ -1009,6 +1009,8 @@ fun main() {
         ?: error("JWT_ALGORITHM_SIGN_SECRET not defined")
     }
   )
+
+  Constants.logger.info("Connecting using JDBC driver $jdbcDriver")
 
   AppDB.initialize(
     jdbcUrl = jdbcUrl,
