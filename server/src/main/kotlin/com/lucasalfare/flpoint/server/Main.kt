@@ -34,6 +34,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.datetime.timestamp
@@ -91,7 +92,7 @@ fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
 
     val isInside = if (enter <= exit) {
       // normal interval (same day)
-        checkLocal in enter..exit
+      checkLocal in enter..exit
     } else {
       // interval crossing midnight
       checkLocal >= enter || checkLocal <= exit
@@ -598,6 +599,23 @@ object ExposedDataCRUD : DataCRUD {
   override suspend fun clearJwtBlackList(): Unit = AppDB.safeQuery {
     JwtBlacklist.deleteAll()
   }
+
+  suspend fun getLastPointByUserId(userId: Int): Point? =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error retrieving last point")) {
+      Points
+        .selectAll()
+        .where { Points.relatedUserId eq userId }
+        .orderBy(Points.instant to SortOrder.DESC)
+        .limit(1)
+        .singleOrNull()
+        ?.let {
+          Point(
+            id = it[Points.id].value,
+            relatedUserId = it[Points.relatedUserId],
+            instant = it[Points.instant]
+          )
+        }
+    }
 }
 //</editor-fold>
 
@@ -645,29 +663,28 @@ object AppUsecases {
   }
 
   suspend fun doPoint(userId: Int): Int {
-    ExposedDataCRUD.getUser(userId).let {
-      if (it == null) throw AppError("User not found")
+    val user = ExposedDataCRUD.getUser(userId)
+      ?: throw AppError("User not found")
 
-      val generatedInstant = Clock.System.now()
-      if (!instantIsInValidTimeInterval(check = generatedInstant, user = it)) {
-        throw RuleViolatedError("Tried to do point in a time that is not in any of the user time intervals!")
-      }
+    val generatedInstant = Clock.System.now()
 
-      // we assume the list can not be null, it can only be empty, because a user with [userId] was verified above
-      return ExposedDataCRUD.getPointsByUserId(it.id).let { instants ->
-        if (instants.isNotEmpty()) {
-          val lastInstant = instants.last().instant
-          if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
-            throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
-          }
-        }
+    if (!instantIsInValidTimeInterval(check = generatedInstant, user = user)) {
+      throw RuleViolatedError("Tried to do point in a time that is not in any of the user time intervals!")
+    }
 
-        ExposedDataCRUD.createPoint(
-          relatedUserId = userId,
-          instant = generatedInstant
-        )
+    val lastPoint = ExposedDataCRUD.getLastPointByUserId(user.id)
+
+    if (lastPoint != null) {
+      val lastInstant = lastPoint.instant
+      if (!instantIsAtLeast30MinutesAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
+        throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
       }
     }
+
+    return ExposedDataCRUD.createPoint(
+      relatedUserId = userId,
+      instant = generatedInstant
+    )
   }
 
   suspend fun getUserPoints(userId: Int): List<PointDTO> {
