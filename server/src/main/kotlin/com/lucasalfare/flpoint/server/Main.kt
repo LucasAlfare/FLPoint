@@ -771,11 +771,10 @@ object AppDB {
     try {
       queryFunction()
     } catch (e: Exception) {
-      // always debug the error in server side
       e.printStackTrace()
 
-      if (onFailureThrowable == null) throw Throwable("General error -> [$e]")
-      else throw onFailureThrowable
+      throw (onFailureThrowable ?: DataHandlingError("Database operation failed"))
+        .also { it.initCause(e) }
     }
   }
 
