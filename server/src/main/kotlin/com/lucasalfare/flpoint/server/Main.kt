@@ -764,7 +764,7 @@ object AppDB {
     maximumPoolSize: Int,
   ): HikariDataSource {
     val hikariConfig = HikariConfig().apply {
-      if (jdbcDriverClassName == Constants.DATABASE_SQLITE_URL)
+      if (jdbcUrl == Constants.DATABASE_SQLITE_URL)
         this.transactionIsolation = IsolationLevel.TRANSACTION_SERIALIZABLE.name
 
       this.jdbcUrl = jdbcUrl
