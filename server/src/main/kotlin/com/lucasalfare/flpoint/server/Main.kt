@@ -385,7 +385,7 @@ object ExposedDataCRUD : DataCRUD {
 
   override suspend fun clearUsers(): Boolean =
     AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error clearing users")) {
-      Users.deleteAll() > 0
+      Users.deleteAll() >= 0
     }
 
   override suspend fun createPoint(relatedUserId: Int, instant: Instant): Int =
@@ -758,6 +758,8 @@ fun Application.statusPagesConfiguration() {
   }
 }
 
+// if someone edit "claim" with empty secret he can be turned into an admin?
+// needs revalidation in DB? If yes, how?
 suspend fun RoutingContext.handleAsAuthorizedAdmin(
   onSucceedAdminVerification: suspend () -> Unit = {}
 ) {
