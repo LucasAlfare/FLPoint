@@ -481,6 +481,16 @@ object ExposedDataCRUD : DataCRUD {
           )
         }
     }
+
+  suspend fun isUserAdmin(userId: Int): Boolean =
+    AppDB.safeQuery(onFailureThrowable = DataHandlingError("Error checking admin privilege")) {
+      Users
+        .selectAll()
+        .where { Users.id eq userId }
+        .singleOrNull()
+        ?.get(Users.isAdmin)
+        ?: false
+    }
 }
 //</editor-fold>
 
@@ -711,9 +721,8 @@ fun Application.authenticationConfiguration() {
         }
 
         val id = jwtCredential.payload.getClaim(AppJwtClaims.USER_ID_KEY).asInt()
-        val isAdmin = jwtCredential.payload.getClaim(AppJwtClaims.IS_ADMIN_KEY).asBoolean()
 
-        return@validate if (id != null && isAdmin != null) {
+        return@validate if (id != null) {
           JWTPrincipal(jwtCredential.payload)
         } else {
           null
@@ -758,16 +767,19 @@ fun Application.statusPagesConfiguration() {
   }
 }
 
-// if someone edit "claim" with empty secret he can be turned into an admin?
-// needs revalidation in DB? If yes, how?
 suspend fun RoutingContext.handleAsAuthorizedAdmin(
   onSucceedAdminVerification: suspend () -> Unit = {}
 ) {
-  val principal = call.principal<JWTPrincipal>()
-  val isAdmin = principal?.payload?.getClaim(AppJwtClaims.IS_ADMIN_KEY)?.asBoolean() ?: false
+  val claims = call.getAppJwtClaims()
+    ?: throw AuthenticationError("Invalid JWT claims")
 
-  if (isAdmin) onSucceedAdminVerification()
-  else throw NoPrivilegeError()
+  val isAdmin = ExposedDataCRUD.isUserAdmin(claims.userId)
+
+  if (isAdmin) {
+    onSucceedAdminVerification()
+  } else {
+    throw NoPrivilegeError()
+  }
 }
 
 fun Application.serializationConfiguration() {
