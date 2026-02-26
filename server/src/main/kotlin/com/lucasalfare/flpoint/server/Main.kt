@@ -59,9 +59,6 @@ import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 //<editor-fold desc="EXTENSIONS-SECTION">
-// TODO: check if was found a cyclic reference to avoid infinite loops
-// TODO: probably can be done by indexing the references in a list and
-// TODO: always checking the indexes for existence
 fun Throwable.customRootCause(): Throwable {
   val visited = mutableSetOf<Throwable>()
   var current = this
@@ -816,7 +813,6 @@ fun Application.configureCORS() {
 fun Application.initKtorConfiguration() {
   install(CallLogging) {
     level = Level.INFO
-
     format { call ->
       val status = call.response.status()
       val httpMethod = call.request.httpMethod.value
