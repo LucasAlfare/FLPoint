@@ -3,12 +3,12 @@ package rules
 import com.lucasalfare.flpoint.server.instantIsAtLeast30MinutesAwayFromLast
 import com.lucasalfare.flpoint.server.instantIsInValidTimeInterval
 import getSomeUser
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 // 2024-10-16T00:47:42.643891Z
 class RulesTests {

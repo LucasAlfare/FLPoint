@@ -6,8 +6,8 @@ import disposeTestingDatabase
 import getSomeUser
 import initTestingDatabase
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
