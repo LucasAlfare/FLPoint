@@ -15,6 +15,7 @@ dependencies {
   implementation(libs.ktor.auth)
   implementation(libs.ktor.auth.jwt)
   implementation(libs.ktor.utils)
+  implementation(libs.ktor.call.logging)
   implementation(libs.ktor.client.content.negotiation)
   implementation(libs.ktor.serialization.jackson) // only due to DOCKER bug...
 

@@ -22,6 +22,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.*
+import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
@@ -47,6 +48,9 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.mindrot.jbcrypt.BCrypt
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -59,11 +63,15 @@ import kotlin.time.toKotlinInstant
 // TODO: probably can be done by indexing the references in a list and
 // TODO: always checking the indexes for existence
 fun Throwable.customRootCause(): Throwable {
+  val visited = mutableSetOf<Throwable>()
   var current = this
-  while (true) {
-    if (current.cause == null) return current
+
+  while (current.cause != null && current.cause !in visited) {
+    visited += current
     current = current.cause!!
   }
+
+  return current
 }
 //</editor-fold>
 
@@ -102,6 +110,8 @@ fun validatePassword(password: String) {
 //<editor-fold desc="MODELING-SECTION">
 class Constants {
   companion object {
+    val logger: Logger = LoggerFactory.getLogger("App")!!
+
     const val DEFAULT_MIN_PASSWORD_LENGTH = 4
 
     const val DEFAULT_JWT_EXPIRATION_TIME = 10 // minutes
@@ -616,7 +626,7 @@ object AppDB {
     try {
       queryFunction()
     } catch (e: Exception) {
-      e.printStackTrace()
+      Constants.logger.error("Database error", e)
 
       throw (onFailureThrowable ?: DataHandlingError("Database operation failed"))
         .also { it.initCause(e) }
@@ -748,6 +758,7 @@ fun Application.authenticationConfiguration() {
 fun Application.statusPagesConfiguration() {
   install(StatusPages) {
     exception<Throwable> { call, cause ->
+      Constants.logger.error("Unhandled exception on ${call.request.uri}", cause)
       return@exception when (val root = cause.customRootCause()) {
         is DataHandlingError -> call.respond(HttpStatusCode.InternalServerError, root.message ?: "DataHandlingError")
         is AuthenticationError -> call.respond(HttpStatusCode.Unauthorized, root.message ?: "AuthenticationError")
@@ -803,6 +814,16 @@ fun Application.configureCORS() {
 }
 
 fun Application.initKtorConfiguration() {
+  install(CallLogging) {
+    level = Level.INFO
+
+    format { call ->
+      val status = call.response.status()
+      val httpMethod = call.request.httpMethod.value
+      val userAgent = call.request.headers["User-Agent"]
+      "Status: $status, HTTP method: $httpMethod, User agent: $userAgent"
+    }
+  }
   authenticationConfiguration()
   statusPagesConfiguration()
   serializationConfiguration()
