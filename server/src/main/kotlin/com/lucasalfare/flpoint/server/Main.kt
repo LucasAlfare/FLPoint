@@ -83,16 +83,21 @@ fun plainMatchesHashed(plain: String, hashed: String): Boolean {
 
 // TODO: this function still not correctly working
 fun instantIsInValidTimeInterval(check: Instant, user: User): Boolean {
-  // we check the instant as a local date time in the stored user TZ
-  val checkLocal = check.toLocalDateTime(user.timeZone)
+  val checkLocal = check.toLocalDateTime(user.timeZone).time
 
-  // time intervals are just flat hours in a day, e.g.: "enter=8:00 morning; exit=14:00 afternoon"
-  // due to this, they are not taking care about TZ
   for (interval in user.timeIntervals) {
-    // if the checking time is inside of at least one of intervals, then early return true
-    if (checkLocal.time in (interval.enter..interval.exit)) {
-      return true
+    val enter = interval.enter
+    val exit = interval.exit
+
+    val isInside = if (enter <= exit) {
+      // normal interval (same day)
+        checkLocal in enter..exit
+    } else {
+      // interval crossing midnight
+      checkLocal >= enter || checkLocal <= exit
     }
+
+    if (isInside) return true
   }
 
   return false
