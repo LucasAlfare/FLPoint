@@ -104,8 +104,6 @@ class Constants {
   companion object {
     const val DEFAULT_MIN_PASSWORD_LENGTH = 4
 
-    const val DEFAULT_ENTER_TOLERANCE_MINUTES = 5 // minutes
-    const val DEFAULT_EXIT_TOLERANCE_MINUTES = 5 // minutes
     const val DEFAULT_JWT_EXPIRATION_TIME = 10 // minutes
 
     const val DATABASE_SQLITE_URL = "jdbc:sqlite:./data.db"
@@ -422,8 +420,6 @@ object ExposedDataCRUD : DataCRUD {
             relatedUserId = it[Points.relatedUserId],
             instant = it[Points.instant]
           )
-        }.let {
-          it.ifEmpty { emptyList() }
         }
     }
 
@@ -497,23 +493,12 @@ object ExposedDataCRUD : DataCRUD {
 //<editor-fold desc="DATA-USECASES">
 object AppUsecases {
   suspend fun signupUser(createUserRequestDTO: CreateUserRequestDTO, isAdmin: Boolean = false): User {
-    val nextUser = run {
-      User(
-        id = -1, // not defined here
-        name = createUserRequestDTO.name,
-        email = createUserRequestDTO.email,
-        hashedPassword = hashed(createUserRequestDTO.plainPassword),
-        timeZone = createUserRequestDTO.timeZone,
-        isAdmin = isAdmin
-      )
-    }
-
     return ExposedDataCRUD.createUser(
-      name = nextUser.name,
-      email = nextUser.email,
-      hashedPassword = nextUser.hashedPassword,
-      timeZone = nextUser.timeZone,
-      isAdmin = nextUser.isAdmin
+      name = createUserRequestDTO.name,
+      email = createUserRequestDTO.email,
+      hashedPassword = hashed(createUserRequestDTO.plainPassword),
+      timeZone = createUserRequestDTO.timeZone,
+      isAdmin = isAdmin
     )
   }
 
@@ -714,19 +699,38 @@ fun Application.authenticationConfiguration() {
       verifier(JwtGenerator.verifier)
 
       validate { jwtCredential ->
+        val jwtToken = this.request.headers["Authorization"]
+          ?.removePrefix("Bearer ")
+          ?.trim()
 
-        val jwtToken = this.request.headers["Authorization"]?.removePrefix("Bearer ")
-        if (jwtToken != null) {
-          println("BLACK LIST CONTAINS THE TOKEN? ${ExposedDataCRUD.jwtBlackListContains(jwtToken)}")
+        // case when token is not present
+        if (jwtToken.isNullOrBlank()) {
+          return@validate null
         }
 
-        val id = jwtCredential.payload.getClaim(AppJwtClaims.USER_ID_KEY).asInt()
-
-        return@validate if (id != null) {
-          JWTPrincipal(jwtCredential.payload)
-        } else {
-          null
+        // verifies if the token is in blacklist, if so, don't validate
+        if (ExposedDataCRUD.jwtBlackListContains(jwtToken)) {
+          return@validate null
         }
+
+        val payload = jwtCredential.payload
+
+        val idClaim = payload.getClaim(AppJwtClaims.USER_ID_KEY)
+        val isAdminClaim = payload.getClaim(AppJwtClaims.IS_ADMIN_KEY)
+
+        // explicitly checks claims existence
+        if (idClaim.isNull || isAdminClaim.isNull) {
+          return@validate null
+        }
+
+        val userId = idClaim.asInt()
+
+        // also, as extra, checks "invalid" ID
+        if (userId <= 0) {
+          return@validate null
+        }
+
+        JWTPrincipal(payload)
       }
     }
   }
