@@ -669,7 +669,7 @@ data class AppJwtClaims(
 
 object JwtGenerator {
 
-  private val jwtAlgorithmSignSecret = "JWT_ALGORITHM_SIGN_SECRET"
+  var jwtAlgorithmSignSecret = "JWT_ALGORITHM_SIGN_SECRET"
 
   val verifier: JWTVerifier = JWT
     .require(Algorithm.HMAC256(jwtAlgorithmSignSecret))
@@ -930,50 +930,84 @@ fun Routing.routesHandlers() {
 //</editor-fold>
 
 fun main() {
-  // init/connect database
+  val appEnv = System.getenv("APP_ENV")?.lowercase() ?: "dev"
+  val isDev = appEnv == "dev"
+
+  Constants.logger.debug($$"Starting application in environment: $appEnv")
+
+  val jdbcUrl =
+    if (isDev) Constants.DATABASE_H2_URL
+    else System.getenv("DATABASE_JDBC_URL")
+      ?: error("DATABASE_JDBC_URL not defined")
+
+  val jdbcDriver =
+    if (isDev) Constants.DATABASE_H2_DRIVER
+    else System.getenv("DATABASE_JDBC_CLASS_NAME")
+      ?: error("DATABASE_JDBC_CLASS_NAME not defined")
+
+  val dbUser =
+    if (isDev) ""
+    else System.getenv("DATABASE_USERNAME") ?: ""
+
+  val dbPass =
+    if (isDev) ""
+    else System.getenv("DATABASE_PASSWORD") ?: ""
+
+  val serverPort =
+    if (isDev) 7171
+    else System.getenv("WEBSERVER_PORT")?.toIntOrNull()
+      ?: error("WEBSERVER_PORT not defined or invalid")
+
+  JwtGenerator.jwtAlgorithmSignSecret = if (isDev) {
+    "dev-secret"
+  } else {
+    System.getenv("JWT_ALGORITHM_SIGN_SECRET")
+      ?: error("JWT_ALGORITHM_SIGN_SECRET not defined")
+  }
+
   AppDB.initialize(
-    jdbcUrl = Constants.DATABASE_H2_URL,
-    jdbcDriverClassName = Constants.DATABASE_H2_DRIVER,
-    username = "",
-    password = "",
+    jdbcUrl = jdbcUrl,
+    jdbcDriverClassName = jdbcDriver,
+    username = dbUser,
+    password = dbPass,
     maximumPoolSize = 5
   ) {
-    // TODO: migrate this to safe approach
     SchemaUtils.createMissingTablesAndColumns(Users, Points, JwtBlacklist)
 
-    // always to try to create admin
     runCatching {
       runBlocking {
-        // We should to move these hardcoded strings to ENV
-        AppUsecases.signupUser(
-          createUserRequestDTO = CreateUserRequestDTO(
-            name = "Francisco Lucas",
-            email = "fl_admin@system.com",
-            plainPassword = "123456",
-            timeZone = TimeZone.of("America/Sao_Paulo")
-          ),
-          isAdmin = true
-        )
+        if (isDev) {
+          Constants.logger.debug("Creating default DEV users...")
 
-        // We also create a basic hardcoded non-admin user for testing
-        AppUsecases.signupUser(
-          createUserRequestDTO = CreateUserRequestDTO(
-            name = "Gabirú Reptiliano",
-            email = "standard@system.com",
-            plainPassword = "123456",
-            timeZone = TimeZone.of("America/Sao_Paulo")
-          ),
-          isAdmin = false
-        )
+          AppUsecases.signupUser(
+            createUserRequestDTO = CreateUserRequestDTO(
+              name = "Dev Admin",
+              email = "admin@dev.com",
+              plainPassword = "123456",
+              timeZone = TimeZone.of("America/Sao_Paulo")
+            ),
+            isAdmin = true
+          )
+
+          AppUsecases.signupUser(
+            createUserRequestDTO = CreateUserRequestDTO(
+              name = "Dev User",
+              email = "user@dev.com",
+              plainPassword = "123456",
+              timeZone = TimeZone.of("America/Sao_Paulo")
+            ),
+            isAdmin = false
+          )
+        }
       }
     }.onSuccess {
-      println("Admin user was created!")
+      Constants.logger.debug("Initial users created (or already existed)")
     }.onFailure {
-      println("An error occurred during the admin creation: [${it.message}]")
+      Constants.logger.debug("User initialization skipped: ${it.message}")
     }
   }
 
-  embeddedServer(Netty, 7171) {
+  embeddedServer(factory = Netty, port = serverPort) {
     initKtorConfiguration()
   }.start(true)
 }

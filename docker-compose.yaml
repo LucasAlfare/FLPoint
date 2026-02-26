@@ -1,17 +1,21 @@
 services:
-  fl-refs:
+  fl-points:
     container_name: fl-points-container
     build: .
-    # variables values obtained from local/private .env file
-    environment:
-      DATABASE_JDBC_URL: ${DATABASE_JDBC_URL}
-      DATABASE_JDBC_CLASS_NAME: ${DATABASE_JDBC_CLASS_NAME}
-      DATABASE_USERNAME: ${DATABASE_USERNAME}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      WEBSERVER_PORT: ${WEBSERVER_PORT}
-      #      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      #      ADMIN_PLAIN_PASSWORD: ${ADMIN_PLAIN_PASSWORD}
-      JWT_AUTH_REALM: ${JWT_AUTH_REALM}
-      JWT_ALGORITHM_SIGN_SECRET: ${JWT_ALGORITHM_SIGN_SECRET}
+    restart: unless-stopped
+
     ports:
       - "7171:7171"
+
+    environment:
+      PASS: pass
+#      APP_ENV: prod
+#      DATABASE_JDBC_URL: jdbc:sqlite:/data/data.db
+#      DATABASE_JDBC_CLASS_NAME: org.sqlite.JDBC
+#      DATABASE_USERNAME: ""
+#      DATABASE_PASSWORD: ""
+#      WEBSERVER_PORT: 7171
+#      JWT_ALGORITHM_SIGN_SECRET: super-secret-production
+
+    volumes:
+      - ./data:/data
