@@ -760,7 +760,7 @@ object AppDB {
     }
 
   /**
-   * This is a helper function to automatically tries perform the
+   * This is a helper function to automatically tries to perform the
    * query block callback and throw the defined throwable if some error
    * was fired.
    */
