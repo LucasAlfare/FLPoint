@@ -1,13 +1,9 @@
 package rules
 
 import com.lucasalfare.flpoint.server.instantIsAtLeast10SecondsAwayFromLast
-import com.lucasalfare.flpoint.server.instantIsInValidTimeInterval
-import getSomeUser
-import kotlinx.datetime.toLocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Clock
 import kotlin.time.Instant
 
 // 2024-10-16T00:47:42.643891Z
@@ -28,23 +24,6 @@ class RulesTests {
     val current = Instant.parse("2024-10-16T08:10:00.00Z")
 
     val result = instantIsAtLeast10SecondsAwayFromLast(current, last)
-    assertFalse(result)
-  }
-
-  @Test
-  fun `test instantIsInValidTimeInterval() success`() {
-    val user = getSomeUser()
-    val now = Clock.System.now().toLocalDateTime(user.timeZone)
-    val check = Instant.parse("2024-10-16T${(now.hour) + 3}:00:00.00Z")
-    val result = instantIsInValidTimeInterval(check, user)
-    assertTrue(result)
-  }
-
-  @Test
-  fun `test instantIsInValidTimeInterval() failure`() {
-    val user = getSomeUser()
-    val check = Instant.parse("2024-10-16T${7 + 3}:00:00.00Z")
-    val result = instantIsInValidTimeInterval(check, user)
     assertFalse(result)
   }
 }

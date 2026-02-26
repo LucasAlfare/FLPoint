@@ -536,7 +536,7 @@ object AppUsecases {
     if (lastPoint != null) {
       val lastInstant = lastPoint.instant
       if (!instantIsAtLeast10SecondsAwayFromLast(check = generatedInstant, lastInstant = lastInstant)) {
-        throw RuleViolatedError("Tried to create a point before at least 30 min from last point!")
+        throw RuleViolatedError("Tried to create a point before at least 10 seconds from last point!")
       }
     }
 
