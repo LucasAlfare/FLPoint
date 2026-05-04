@@ -1,4 +1,12 @@
-import com.lucasalfare.flpoint.server.*
+import com.lucasalfare.flpoint.server.config.initKtorConfiguration
+import com.lucasalfare.flpoint.server.infrastructure.persistence.AppDB
+import com.lucasalfare.flpoint.server.infrastructure.persistence.Users
+import com.lucasalfare.flpoint.server.infrastructure.persistence.Points
+import com.lucasalfare.flpoint.server.infrastructure.persistence.SchemaUtils
+import com.lucasalfare.flpoint.server.shared.Constants
+import com.lucasalfare.flpoint.server.domain.model.User
+import com.lucasalfare.flpoint.server.domain.model.CreateUserRequestDTO
+import com.lucasalfare.flpoint.server.domain.model.CredentialsDTO
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -8,7 +16,6 @@ import io.ktor.server.testing.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
@@ -23,23 +30,10 @@ internal const val USER_PASS = "user12345"
 
 internal val defaultUserTimeZone = TimeZone.of("America/Sao_Paulo")
 
-/*
-TODO: solve this:
-We have a problem.
-If we run this code, eg, at "22h" (night) we end with intervals like
-
-enter=20h and exit=00h
-
-knowing that, exit will always be "earlier"
-*/
-internal fun getDefaultUserTimeInterval(): TimeInterval {
-  val now = Clock.System.now()
-  val nextEnter = (now - 2.hours).toLocalDateTime(defaultUserTimeZone)
-  val nextExit = (now + 2.hours).toLocalDateTime(defaultUserTimeZone)
-  return TimeInterval(
-    enter = nextEnter.time,
-    exit = nextExit.time
-  )
+// Note: TimeInterval functionality removed from domain model
+// This function is kept for compatibility but may need adjustment
+internal fun getDefaultUserTimeZone(): TimeZone {
+  return defaultUserTimeZone
 }
 
 internal fun ApplicationTestBuilder.customSetupTestClient(): HttpClient {
@@ -83,9 +77,8 @@ internal fun getSomeAdmin() = User(
   name = USER_ADMIN_NAME,
   email = USER_ADMIN_EMAIL,
   hashedPassword = USER_ADMIN_PASS,
-  isAdmin = true,
-  timeIntervals = emptyList(),
-  timeZone = TimeZone.of("America/Sao_Paulo")
+  timeZone = TimeZone.of("America/Sao_Paulo"),
+  isAdmin = true
 )
 
 internal fun getSomeUser() = User(
@@ -93,15 +86,14 @@ internal fun getSomeUser() = User(
   name = USER_NAME,
   email = USER_EMAIL,
   hashedPassword = USER_PASS,
-  isAdmin = false,
-  timeIntervals = listOf(getDefaultUserTimeInterval()),
-  timeZone = TimeZone.of("America/Sao_Paulo")
+  timeZone = TimeZone.of("America/Sao_Paulo"),
+  isAdmin = false
 )
 
 internal suspend fun signupUserForTest(
   client: HttpClient,
   createUserRequestDTO: CreateUserRequestDTO
-) = client.post("/register") {
+) = client.post("/admin/register") {
   contentType(ContentType.Application.Json)
   setBody(createUserRequestDTO)
 }

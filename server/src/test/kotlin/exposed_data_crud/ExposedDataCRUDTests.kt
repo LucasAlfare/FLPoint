@@ -1,7 +1,7 @@
 package exposed_data_crud
 
-import com.lucasalfare.flpoint.server.ExposedDataCRUD
-import com.lucasalfare.flpoint.server.Users
+import com.lucasalfare.flpoint.server.infrastructure.persistence.ExposedDataCRUD
+import com.lucasalfare.flpoint.server.infrastructure.persistence.Users
 import disposeTestingDatabase
 import getSomeUser
 import initTestingDatabase
@@ -34,7 +34,6 @@ class ExposedDataCRUDTests {
         name = someUser.name,
         email = someUser.email,
         hashedPassword = someUser.hashedPassword,
-        timeIntervals = someUser.timeIntervals,
         timeZone = someUser.timeZone,
         isAdmin = someUser.isAdmin
       )
@@ -46,8 +45,7 @@ class ExposedDataCRUDTests {
         assertEquals(someUser.email, result?.get(Users.email))
         assertEquals(someUser.hashedPassword, result?.get(Users.hashedPassword))
 
-        // TODO: correct assert content equals
-//        assertEquals(someUser.timeIntervals, TimeInterval.fromStringList(result?.get(Users.timeIntervalsStringList)))
+        // Note: timeIntervals functionality removed from domain model
 
         assertEquals(someUser.timeZone.toString(), result?.get(Users.timeZone))
         assertEquals(someUser.isAdmin, result?.get(Users.isAdmin))

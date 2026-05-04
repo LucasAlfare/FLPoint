@@ -1,6 +1,6 @@
 package rules
 
-import com.lucasalfare.flpoint.server.instantIsAtLeast10SecondsAwayFromLast
+import com.lucasalfare.flpoint.server.domain.validation.instantIsAtLeast10SecondsAwayFromLast
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
